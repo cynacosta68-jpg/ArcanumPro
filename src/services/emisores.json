@@ -1,0 +1,18 @@
+{
+  "default": {
+    "razonSocial": "",
+    "domicilio": "",
+    "condicionIva": "",
+    "ingresosBrutos": "",
+    "inicioActividades": "",
+    "mipyme": false
+  },
+  "20000000001": {
+    "razonSocial": "EMISOR DE EJEMPLO S.A.",
+    "domicilio": "Calle Falsa 123 - Ciudad, Provincia",
+    "condicionIva": "Responsable Inscripto",
+    "ingresosBrutos": "",
+    "inicioActividades": "",
+    "mipyme": true
+  }
+}

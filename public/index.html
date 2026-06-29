@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Facturador Masivo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2327408b'/%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M12 54 L12 24 A20 20 0 0 1 52 24 L52 54 L43 54 L43 24 A11 11 0 0 0 21 24 L21 54 Z'/%3E%3Crect x='21' y='39' width='22' height='6' rx='1' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>(function(){try{var t=localStorage.arcanumTheme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<style>
+  :root{
+    --bg:#f5f6f9; --panel:#fff; --ink:#1a1c22; --muted:#5f6573; --line:#e5e8ef;
+    --accent:#27408b; --accent-ink:#1d2f5f; --accent-contrast:#fff; --ok:#2e7d52; --bad:#b23b3b; --warn:#b9791a;
+    --chip:#e9edf6; --header-bg:rgba(245,246,249,.9); --radius:14px;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05);
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  :root[data-theme="dark"]{
+    --bg:#14161b; --panel:#1c1f27; --ink:#e7e9ee; --muted:#9aa1b0; --line:#2a2e38;
+    --accent:#6b8bd6; --accent-ink:#bcd0ff; --accent-contrast:#10131a; --ok:#5cc08a; --bad:#e3736f; --warn:#d6a44a;
+    --chip:#262b36; --header-bg:rgba(20,22,27,.9);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4);
+  }
+  html,body{transition:background-color .2s ease,color .2s ease}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+  a{color:var(--accent-ink)}
+  header{position:sticky;top:0;background:var(--header-bg);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  .bar{display:flex;align-items:center;gap:16px;padding:13px 0}
+  .logo{width:32px;height:32px;border-radius:9px;background:var(--accent);display:grid;place-items:center;color:#fff;font-weight:700;font-family:var(--mono)}
+  .bar h1{font-size:16px;margin:0;font-weight:650}
+  nav{display:flex;gap:4px;margin-left:8px;flex-wrap:wrap}
+  nav button{background:none;border:none;color:var(--muted);padding:7px 11px;border-radius:8px;cursor:pointer;font-size:14px}
+  nav button.active{background:var(--chip);color:var(--ink);font-weight:560}
+  .right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+  .env{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;background:var(--chip);color:var(--accent-ink)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+  button.primary:hover{filter:brightness(1.08)}
+  button{font-family:var(--sans);font-size:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 13px;border-radius:9px;cursor:pointer}
+  button:hover{box-shadow:var(--shadow)}
+  button.ghost{border:none;color:var(--accent-ink);padding:6px 9px;display:inline-flex;align-items:center;gap:5px}
+  button.ghost svg,nav button svg{width:16px;height:16px}
+  .iconbtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;transition:color .15s,box-shadow .15s}
+  .iconbtn:hover{color:var(--ink);box-shadow:var(--shadow)}
+  .iconbtn svg{display:block;width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .menu{position:absolute;right:0;top:42px;width:250px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none;z-index:30}
+  .menu.open{display:block}
+  .menu-sec{padding:6px 0;border-bottom:1px solid var(--line)} .menu-sec:last-child{border-bottom:none}
+  .menu-h{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:4px 12px}
+  .menu-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 12px;font-size:14px}
+  .menu-row select{width:auto;padding:5px 8px}
+  .menu-item{display:flex;align-items:center;gap:9px;width:100%;border:none;background:none;padding:8px 12px;border-radius:8px;color:var(--ink);font-size:14px;cursor:pointer;text-align:left}
+  .menu-item:hover{background:var(--chip)} .menu-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .pwwrap{position:relative} .pwwrap input{padding-right:38px}
+  .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:pointer;background:none;border:none}
+  .eye:hover{color:var(--ink)} .eye svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  main{padding:24px 0 80px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .stat .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .stat .val{font-size:26px;font-weight:680;margin-top:6px;font-family:var(--mono)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+  .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.idle{background:#cabfa9}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:30px 0 12px}
+  h3{font-size:15px;margin:16px 0 10px;text-transform:capitalize}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:560;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  td.mono,.mono{font-family:var(--mono)}
+  input,select,textarea{font-family:var(--sans);font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel);width:100%}
+  textarea{font-family:var(--mono);font-size:12px;min-height:120px}
+  label{font-size:12px;color:var(--muted);display:block;margin:10px 0 4px}
+  .f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .tag{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:999px;background:var(--chip);color:var(--accent-ink)}
+  .tag.rich,.tag.ok{background:var(--chip);color:var(--ok)} .tag.no{background:var(--chip);color:var(--bad)} .tag.warn{background:var(--chip);color:var(--warn)}
+  .svc{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;background:var(--panel)}
+  .svc .top{display:flex;align-items:center;gap:10px}
+  .pasos{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;display:none}
+  .pasos.open{display:block}.pasos ol{margin:0;padding-left:20px}.pasos li{margin:5px 0}
+  .rel{font-family:var(--mono);background:var(--chip);padding:2px 6px;border-radius:6px}
+  .bars{display:flex;align-items:flex-end;gap:5px;height:90px;margin-top:8px}
+  .bars .b{flex:1;background:var(--accent);border-radius:4px 4px 0 0;min-height:3px;opacity:.85}
+  .muted{color:var(--muted)} .hint{color:var(--muted);font-size:13px}
+  .login{max-width:360px;margin:12vh auto;text-align:center}
+  .login .card{padding:28px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0c0e13;color:#f3f5f9;padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:80vw;box-shadow:var(--shadow);text-align:center;word-break:break-word;line-height:1.35}
+  .toast.show{opacity:1}.toast.bad{background:var(--bad)}
+  .hidden{display:none}
+  pre{background:#1c1a17;color:#f0ebe1;padding:12px;border-radius:10px;overflow:auto;font-family:var(--mono);font-size:11.5px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;place-items:center;z-index:20;padding:20px}
+  .modal.open{display:grid}.modal .card{max-width:620px;width:100%;max-height:85vh;overflow:auto}
+  .hero{background:linear-gradient(180deg,var(--panel),var(--bg));border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:16px}
+  .hero h2{font-size:22px;margin:0 0 8px;text-transform:none;letter-spacing:-.2px;color:var(--ink)}
+  .hero p{color:var(--muted);margin:0 0 14px;max-width:62ch}
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap}
+  .stat .val[data-count]{font-variant-numeric:tabular-nums}
+  .reveal{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+  .bars .b{transition:height .7s cubic-bezier(.22,1,.36,1)}
+  @media(prefers-reduced-motion:reduce){.reveal{animation:none}.bars .b{transition:none}}
+  .progw{display:flex;align-items:center;gap:8px}
+  .prog{height:7px;background:var(--chip);border-radius:999px;overflow:hidden;min-width:90px}
+  .prog>i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .6s cubic-bezier(.22,1,.36,1)}
+  .progp{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:1px 6px;border-radius:999px;min-width:40px;text-align:center}
+  td.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+  .segtbl td{vertical-align:middle}
+  .perfilbtn{font-size:13px}
+  .perfilbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div id="loginView" class="login hidden">
+  <div class="card">
+    <div class="logo" style="margin:0 auto 14px;width:44px;height:44px;border-radius:12px"><svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><path fill="#fff" fill-rule="evenodd" d="M12 54 L12 24 A20 20 0 0 1 52 24 L52 54 L43 54 L43 24 A11 11 0 0 0 21 24 L21 54 Z"/><rect x="21" y="39" width="22" height="6" rx="1" fill="#fff"/></svg></div>
+    <h1 style="margin:0 0 4px">Facturador Masivo</h1>
+    <p class="hint" style="margin:0 0 18px">Bienvenido al portal de Emisiones Masivas en ARCA</p>
+    <label style="text-align:left">Perfil</label>
+    <div class="row" style="gap:8px;margin:0 0 12px">
+      <button type="button" class="perfilbtn" data-p="asociacion" onclick="setPerfil('asociacion')" style="flex:1">Asociación médica</button>
+      <button type="button" class="perfilbtn" data-p="pyme" onclick="setPerfil('pyme')" style="flex:1">PyME</button>
+    </div>
+    <label style="text-align:left">Usuario</label><input id="lu" autocomplete="username">
+    <label style="text-align:left">Contraseña</label>
+    <div class="pwwrap"><input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"><button class="eye" type="button" tabindex="-1" aria-label="Mostrar u ocultar contraseña" onclick="togglePw('lp',this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <button class="primary" style="width:100%;margin-top:16px" onclick="doLogin()">Entrar</button>
+    <div id="oidcBtn"></div>
+  </div>
+</div>
+
+<div id="appView" class="hidden">
+<header><div class="wrap bar">
+  <div class="logo"><svg viewBox="0 0 64 64" width="22" height="22" aria-hidden="true"><path fill="#fff" fill-rule="evenodd" d="M12 54 L12 24 A20 20 0 0 1 52 24 L52 54 L43 54 L43 24 A11 11 0 0 0 21 24 L21 54 Z"/><rect x="21" y="39" width="22" height="6" rx="1" fill="#fff"/></svg></div><h1>Facturador Masivo</h1>
+  <nav id="nav"></nav>
+  <div class="right" style="position:relative"><span id="who"></span>
+    <button class="iconbtn" id="menuBtn" onclick="toggleMenu()" aria-label="Menú"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <div class="menu" id="appmenu"></div>
+  </div>
+</div></header>
+<main class="wrap"><div id="view"></div></main>
+</div>
+
+<div class="modal" id="modal"><div class="card" id="modalBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=(s,e=document)=>e.querySelector(s);
+let ME=null, ENV='—';
+async function api(path,opts={}){
+  const r=await fetch(path,{credentials:'include',headers:{'Content-Type':'application/json',...(opts.headers||{})},...opts});
+  const ct=r.headers.get('content-type')||'';
+  const j=ct.includes('json')?await r.json().catch(()=>({})):{};
+  if(r.status===401){showLogin();throw new Error('401');}
+  if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+  return j;
+}
+function toast(m,bad){const t=$('#toast');t.textContent=m;t.className='toast show'+(bad?' bad':'');setTimeout(()=>t.className='toast',2600);}
+function animateCounts(){document.querySelectorAll('[data-count]').forEach(el=>{const target=+el.getAttribute('data-count'),dur=850,t0=performance.now();function step(t){const p=Math.min(1,(t-t0)/dur);el.textContent=Math.round((1-Math.pow(1-p,3))*target);if(p<1)requestAnimationFrame(step);else el.textContent=target;}requestAnimationFrame(step);});}
+function modal(html){$('#modalBody').innerHTML=html;$('#modal').classList.add('open');}
+function closeModal(){$('#modal').classList.remove('open');}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+function showLogin(){$('#loginView').classList.remove('hidden');$('#appView').classList.add('hidden');try{setPerfil(PERFIL);}catch(_){}
+  fetch('/api/auth/config').then(r=>r.json()).then(c=>{
+    $('#oidcBtn').innerHTML=c.oidc?'<a href="/api/auth/oidc/login"><button style="width:100%;margin-top:8px">Entrar con Lockatus</button></a>':'';
+  }).catch(()=>{});}
+async function doLogin(){
+  try{ await api('/api/auth/login',{method:'POST',body:JSON.stringify({username:$('#lu').value,password:$('#lp').value})});
+    await boot(); }catch(e){ toast('Usuario o contraseña inválidos',true); }
+}
+async function logout(){ await fetch('/api/auth/logout',{method:'POST',credentials:'include'}); showLogin(); }
+
+let PERFIL=(()=>{try{return localStorage.getItem('arcanum_perfil')||'asociacion';}catch(_){return 'asociacion';}})();
+function setPerfil(p){ PERFIL=p; try{localStorage.setItem('arcanum_perfil',p);}catch(_){}
+  document.querySelectorAll('.perfilbtn').forEach(b=>b.classList.toggle('active', b.dataset.p===p)); }
+const VIEWS=[['panel','Panel'],['clientes','Clientes'],['representados','Representados'],['servicios','Servicios'],['emitir','Emitir'],['comprobantes','Comprobantes'],['seguimiento','Seguimiento'],['generador','Generador'],['webhooks','Webhooks'],['usuarios','Usuarios']];
+function renderNav(cur){
+  $('#nav').innerHTML=VIEWS.filter(v=>v[0]!=='usuarios'||['superadmin','admin'].includes(ME.role))
+    .map(v=>`<button class="${v[0]===cur?'active':''}" onclick="go('${v[0]}')">${v[1]}</button>`).join('');
+}
+function go(v){renderNav(v);location.hash=v;({panel:vPanel,clientes:vClientes,representados:vRepresentados,servicios:vServicios,emitir:vEmitir,comprobantes:vComprobantes,seguimiento:vSeguimiento,generador:vGenerador,webhooks:vWebhooks,usuarios:vUsuarios}[v]||vPanel)();}
+
+async function boot(){
+  try{ const me=await api('/api/auth/me'); ME=me.usuario; }catch(e){ showLogin(); return; }
+  try{ const h=await fetch('/api/health').then(r=>r.json()); ENV=h.env; }catch{}
+  $('#who').textContent=ME.username+' ('+ME.role+')';
+  $('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');
+  go((location.hash||'#panel').slice(1));
+}
+
+/* ---------- PANEL ---------- */
+/* ---------- PANEL ---------- */
+async function vPanel(){
+  const v=$('#view');v.innerHTML='<p class="hint">Cargando métricas…</p>';
+  const {metricas:m}=await api('/api/metrics');
+  let sinCert=false;try{const r=await api('/api/tenants');sinCert=!r.tenants.some(t=>t.tieneCertificado);}catch{}
+  const max=Math.max(1,...m.emisiones.serie.map(s=>s.n));
+  const bars=m.emisiones.serie.map(s=>`<div class="b" title="${s.dia}: ${s.n}" style="height:${Math.round(s.n/max*100)}%"></div>`).join('')||'<span class="hint">sin emisiones aún</span>';
+  const arca=m.arca.map(a=>`<tr><td>${a.servicio}</td><td><span class="dot ${a.ok?'ok':'bad'}"></span>${a.ok?'OK':'caído'}</td><td class="mono">${a.uptime24h??'—'}%</td><td class="mono">${a.latencia??'—'} ms</td></tr>`).join('')||'<tr><td colspan="4" class="hint">El monitor corre cada 5 min; esperá el primer chequeo.</td></tr>';
+  v.innerHTML=`
+   <div class="hero reveal">
+     <h2>Bienvenido al portal de Emisiones Masivas en ARCA</h2>
+     <p>${PERFIL==='pyme'
+       ? 'Emití comprobantes electrónicos en nombre de cada cliente conectándote directo a ARCA. El sistema controla los vencimientos, permite enviarle a tus clientes las facturas por mail y te muestra el estado de los servicios en vivo.'
+       : 'Emití comprobantes electrónicos en nombre de cada profesional, en lote, directo a ARCA. El sistema controla los vencimientos y te muestra el estado de los servicios en vivo.'}</p>
+     <div class="pill-row">
+       <span class="tag"><span class="dot ${m.arca.some(a=>a.ok)?'ok':'bad'}"></span>ARCA · ${ENV}</span>
+       <span class="tag">${ME.username} (${ME.role})</span>
+     </div>
+   </div>
+   ${sinCert?`<div class="card reveal" style="border:1px solid var(--accent);display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px"><div><strong>Todavía no cargaste ningún certificado.</strong> <span class="hint">Es lo primero para poder emitir en ARCA.</span></div><button class="primary" style="margin-left:auto" onclick="go('clientes')">Cargar mi certificado</button></div>`:''}
+   <div class="grid">
+     <div class="card stat reveal"><div class="label">Emisiones hoy</div><div class="val" data-count="${m.emisiones.hoy}">0</div></div>
+     <div class="card stat reveal"><div class="label">Monto hoy</div><div class="val" style="font-size:20px">$${m.emisiones.montoHoy.toLocaleString('es-AR')}</div></div>
+     <div class="card stat reveal"><div class="label">Certs por vencer</div><div class="val" data-count="${m.certificados.porVencer}">0</div></div>
+     <div class="card stat reveal"><div class="label">Peticiones 24h</div><div class="val" data-count="${m.peticiones24h.total}">0</div><div class="hint">${m.peticiones24h.errores} errores · ${m.peticiones24h.latenciaMedia}ms</div></div>
+   </div>
+   <h2>Emisiones (14 días)</h2><div class="card"><div class="bars">${bars}</div></div>
+   <h2>Estado de ARCA</h2><div class="card"><table><thead><tr><th>Servicio</th><th>Estado</th><th>Uptime 24h</th><th>Latencia</th></tr></thead><tbody>${arca}</tbody></table></div>`;
+  animateCounts();
+}
+/* ---------- CLIENTES ---------- */
+async function vClientes(){
+  const v=$('#view'); v.innerHTML='<p class="hint">Cargando…</p>';
+  const {tenants}=await api('/api/tenants');
+
+  // Empty state: sin certificados -> acceso directo guiado
+  if(!tenants.length){
+    v.innerHTML=`
+     <div class="hero reveal" style="text-align:center">
+       <div class="logo" style="margin:0 auto 14px;width:46px;height:46px;border-radius:12px"><svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><path fill="#fff" fill-rule="evenodd" d="M12 54 L12 24 A20 20 0 0 1 52 24 L52 54 L43 54 L43 24 A11 11 0 0 0 21 24 L21 54 Z"/><rect x="21" y="39" width="22" height="6" rx="1" fill="#fff"/></svg></div>
+       <h2 style="margin:0 0 8px">Cargá tu primer certificado</h2>
+       <p style="margin:0 auto 18px;max-width:56ch">Para emitir en ARCA necesitás un certificado digital. Generamos el pedido (CSR), lo subís a ARCA, y pegás el certificado que te devuelven. Toma un par de minutos.</p>
+       <div class="row" style="justify-content:center">
+         <button class="primary" onclick="nuevoCliente()">Cargar mi certificado</button>
+         <button onclick="importarCert()">Ya tengo uno (importar)</button>
+       </div>
+     </div>`;
+    return;
+  }
+
+  // Lista de clientes / representados
+  const conCert=tenants.filter(t=>t.tieneCertificado).length;
+  const rows=tenants.map(t=>{
+    const cert=t.tieneCertificado?`<span class="tag ok">vigente${t.diasParaVencer!=null?' ('+t.diasParaVencer+'d)':''}</span>`:(t.tieneClave?'<span class="tag warn">falta certificado</span>':'<span class="tag no">sin clave</span>');
+    return `<tr><td class="mono" style="padding-left:16px">${t.cuit}</td><td>${t.nombre||''}</td><td>${cert}</td>
+      <td class="row" style="padding-right:16px">
+       ${t.tieneClave?`<button class="ghost" onclick="verCsr('${t.cuit}')">CSR</button>`:''}
+       <button class="ghost" onclick="pegarCert('${t.cuit}')">Pegar .crt</button>
+      </td></tr>`;}).join('');
+  const faltaCrt=tenants.some(t=>t.tieneClave&&!t.tieneCertificado);
+  v.innerHTML=`${faltaCrt?`<div class="card reveal" style="border:1px solid var(--warn);margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div><strong>Falta pegar el certificado.</strong> <span class="hint">Descargaste el .crt de ARCA: usá "Pegar .crt" en la fila de tu CUIT.</span></div></div>`:''}<div class="row"><h2 style="margin:0;text-transform:none;font-size:18px;letter-spacing:-.2px;color:var(--ink)">Clientes</h2>
+    <span class="tag" style="margin-left:2px">${tenants.length} cargados · ${conCert} con certificado</span>
+    <button style="margin-left:auto" onclick="importarCert()">Importar certificado</button>
+    <button class="primary" onclick="nuevoCliente()">Nuevo cliente</button></div>
+    <div class="card" style="margin-top:12px;padding:6px 0;overflow-x:auto"><table><thead><tr><th style="padding-left:16px">CUIT</th><th>Nombre</th><th>Certificado</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="hint" style="margin-top:10px">Flujo: <strong>Nuevo cliente</strong> genera el CSR → lo subís a ARCA → descargás el .crt → <strong>Pegar .crt</strong>.</p>`;
+}
+function nuevoCliente(){modal(`<h3>Nuevo cliente</h3><label>CUIT</label><input id="ncuit" class="mono" placeholder="20111111112">
+  <label>Nombre / Razón social</label><input id="nnombre">
+  <div class="row" style="margin-top:16px"><button class="primary" onclick="crearCliente()">Generar CSR</button><button onclick="closeModal()">Cancelar</button></div>`);}
+async function crearCliente(){
+  try{ const r=await api('/api/tenants',{method:'POST',body:JSON.stringify({cuit:$('#ncuit').value,nombre:$('#nnombre').value})});
+    modal(`<h3>CSR generado para ${r.cuit}</h3><p class="hint">Subí este CSR a ARCA (WSASS en homologación, o el portal de Certificados en producción), descargá el certificado y luego usá "Pegar .crt".</p>
+      <pre>${r.csr.replace(/</g,'&lt;')}</pre>
+      <div class="row"><button onclick="navigator.clipboard.writeText(\`${r.csr}\`);toast('CSR copiado')">Copiar</button>
+      <a href="/api/tenants/${r.cuit}/csr"><button>Descargar .csr</button></a>
+      <button class="primary" onclick="closeModal();vClientes()">Listo</button></div>`);
+    toast('Cliente creado'); }catch(e){toast(e.message,true);}
+}
+async function verCsr(cuit){ try{const t=await fetch('/api/tenants/'+cuit+'/csr',{credentials:'include'}).then(r=>r.text());
+  modal(`<h3>CSR de ${cuit}</h3><pre>${t.replace(/</g,'&lt;')}</pre><div class="row"><button onclick="navigator.clipboard.writeText(\`${t}\`);toast('Copiado')">Copiar</button><a href="/api/tenants/${cuit}/csr"><button>Descargar</button></a><button class="primary" onclick="closeModal()">Cerrar</button></div>`);}catch(e){toast(e.message,true);} }
+function pegarCert(cuit){modal(`<h3>Pegar certificado de ${cuit}</h3><p class="hint">Pegá el contenido del .crt que descargaste de ARCA (incluyendo BEGIN/END CERTIFICATE).</p>
+  <textarea id="certpem" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+  <div class="row" style="margin-top:14px"><button class="primary" onclick="guardarCert('${cuit}')">Guardar</button><button onclick="closeModal()">Cancelar</button></div>`);}
+async function guardarCert(cuit){ try{ await api('/api/tenants/'+cuit+'/certificate',{method:'POST',body:JSON.stringify({certPem:$('#certpem').value})});
+  toast('Certificado cargado');closeModal();vClientes();}catch(e){toast(e.message,true);} }
+function importarCert(){modal(`<h3>Importar certificado ya validado</h3><p class="hint">Para un par clave + certificado que ya tenés (ej. el que usás en n8n). Arcanum valida que coincidan.</p>
+  <div class="f2"><div><label>CUIT</label><input id="imp_cuit" class="mono" placeholder="20111111112"></div>
+  <div><label>Nombre / Razón social</label><input id="imp_nombre"></div></div>
+  <label>Clave privada (PEM)</label><textarea id="imp_key" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+  <label>Certificado (PEM)</label><textarea id="imp_cert" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+  <div class="row" style="margin-top:14px"><button class="primary" onclick="guardarImport()">Importar</button><button onclick="closeModal()">Cancelar</button></div>`);}
+async function guardarImport(){const cuit=($('#imp_cuit').value||'').replace(/[^0-9]/g,'');
+  try{ await api('/api/tenants/'+cuit+'/importar',{method:'POST',body:JSON.stringify({nombre:$('#imp_nombre').value,keyPem:$('#imp_key').value,certPem:$('#imp_cert').value})});
+    toast('Certificado importado');closeModal();vClientes();}catch(e){toast(e.message,true);} }
+
+/* ---------- SERVICIOS ---------- */
+async function vServicios(){
+  const v=$('#view');const {servicios,categorias}=await api('/api/services');
+  let tenants=[];try{tenants=(await api('/api/tenants')).tenants;}catch{}
+  const admin=['superadmin','admin'].includes(ME.role);
+  const cuitOpts=tenants.map(t=>`<option value="${t.cuit}">${t.cuit}${t.nombre?' — '+t.nombre:''}</option>`).join('');
+  let html=`<div class="row"><h2 style="margin:0">Servicios de ARCA (${servicios.length})</h2>
+    <a href="https://www.afip.gob.ar/ws/documentacion/catalogo.asp" target="_blank" rel="noopener" style="margin-left:auto"><button class="ghost"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>Catálogo oficial de ARCA</button></a>
+    ${admin?'<button class="primary" onclick="editarServicio()">Agregar servicio</button>':''}</div>
+    <p class="hint">El catálogo se guarda en la base y ${admin?'lo podés editar acá':'lo edita un superadmin'}. Tocá "Cómo activar" para la guía, o "Verificar" para chequear si tu certificado quedó asociado.</p>
+    ${cuitOpts?`<div class="row" style="margin:6px 0 4px"><span class="hint">Verificar con el CUIT:</span><select id="verif_cuit" style="max-width:280px">${cuitOpts}</select></div>`:'<p class="hint">Cargá un cliente para poder verificar la asociación.</p>'}`;
+  const orden=['facturacion','consultas','agro','aduana','otros'];
+  for(const cat of Object.keys(categorias).sort((a,b)=>orden.indexOf(a)-orden.indexOf(b))){
+    html+=`<h3>${cat}</h3>`;
+    for(const id of categorias[cat]){const s=servicios.find(x=>x.id===id);if(!s)continue;
+      const tag=s.rich?'<span class="tag rich">rico</span>':'<span class="tag">genérico</span>';
+      const off=s.enabled===false?'<span class="tag no">deshabilitado</span>':'';
+      const pasos=(s.activacion&&s.activacion.pasos||[]).map(p=>'<li>'+p+'</li>').join('');
+      const rel=s.activacion&&s.activacion.relacionNombre?`<p class="hint">Servicio a asociar: <span class="rel">${s.activacion.relacionNombre}</span></p>`:'';
+      html+=`<div class="svc"><div class="top">
+        <div><div><strong>${s.nombre}</strong> ${tag} ${off}</div><div class="hint">${s.descripcion||''}</div></div>
+        <div class="row" style="margin-left:auto">
+          <button class="ghost" onclick="verificarServicio('${s.id}',this)">Verificar</button>
+          <button class="ghost" onclick="this.closest('.svc').querySelector('.pasos').classList.toggle('open')">Cómo activar</button>
+          ${admin?`<button class="ghost" onclick='editarServicio(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Editar</button>`:''}
+        </div></div>
+        <div class="verif" style="font-size:13px;margin-top:6px"></div>
+        <div class="pasos">${rel}<ol>${pasos}</ol>
+          <p class="hint"><a target="_blank" href="https://serviciosweb.afip.gob.ar/clavefiscal/adminrel/main.aspx">Abrir Administrador de Relaciones</a>
+          ${s.activacion&&s.activacion.docs?` · <a target="_blank" href="${s.activacion.docs}">documentación</a>`:''}</p></div></div>`;}
+  }
+  v.innerHTML=html;
+}
+async function verificarServicio(id,btn){
+  const sel=$('#verif_cuit');const cuit=sel&&sel.value;
+  if(!cuit){toast('Cargá un cliente primero',true);return;}
+  const box=btn.closest('.svc').querySelector('.verif');
+  box.innerHTML='<span class="hint">Verificando contra ARCA…</span>';
+  try{ const r=await api('/api/services/'+id+'/verificar?cuit='+cuit);
+    if(r.asociado) box.innerHTML=`<span class="tag ok">asociado</span> <span class="hint">CUIT ${cuit} · token vence ${(r.expira||'').slice(0,10)}</span>`;
+    else box.innerHTML=`<span class="tag no">no asociado</span> <span class="hint">${(r.motivo||'').slice(0,180)}</span>`;
+  }catch(e){box.innerHTML=`<span class="tag no">error</span> <span class="hint">${e.message}</span>`;}
+}
+function editarServicio(s){
+  s=s||{endpoints:{}};const e=s.endpoints||{};
+  modal(`<h3>${s.id?'Editar':'Nuevo'} servicio</h3>
+    <label>ID</label><input id="sid" class="mono" value="${s.id||''}" ${s.id?'disabled':''} placeholder="ws_nuevo">
+    <div class="f2"><div><label>Nombre</label><input id="snombre" value="${s.nombre||''}"></div>
+    <div><label>Categoría</label><input id="scat" value="${s.categoria||'otros'}"></div></div>
+    <label>Descripción</label><input id="sdesc" value="${s.descripcion||''}">
+    <div class="f2"><div><label>wsaaService</label><input id="swsaa" class="mono" value="${s.wsaaService||''}"></div>
+    <div><label>SOAP namespace</label><input id="sns" class="mono" value="${s.soapNamespace||''}"></div></div>
+    <label>Endpoint homologación</label><input id="seh" class="mono" value="${e.homo||''}">
+    <label>Endpoint producción</label><input id="sep" class="mono" value="${e.prod||''}">
+    <div class="row" style="margin-top:16px"><button class="primary" onclick="guardarServicio('${s.id||''}')">Guardar</button>
+    ${s.id?`<button onclick="resetServicio('${s.id}')">Restaurar default</button>`:''}
+    <button onclick="closeModal()">Cancelar</button></div>`);
+}
+async function guardarServicio(existing){
+  const def={id:$('#sid').value,nombre:$('#snombre').value,categoria:$('#scat').value,descripcion:$('#sdesc').value,
+    wsaaService:$('#swsaa').value,soapNamespace:$('#sns').value,endpoints:{homo:$('#seh').value,prod:$('#sep').value}};
+  try{ await api('/api/services'+(existing?'/'+existing:''),{method:existing?'PUT':'POST',body:JSON.stringify(def)});
+    toast('Servicio guardado');closeModal();vServicios();}catch(e){toast(e.message,true);}
+}
+async function resetServicio(id){try{await api('/api/services/'+id+'/reset',{method:'POST'});toast('Restaurado');closeModal();vServicios();}catch(e){toast(e.message,true);}}
+
+/* ---------- EMITIR (lotes, dos niveles) ---------- */
+let LOTE=[]; let LOTE_SEL=null; let EMISOR_CUIT=null; let EMISOR_REP=null; let LOTE_FILTRO_OS='';
+let IMP_DATA=null, IMP_FILE=null, EMISORES_VALIDOS=[];
+let REPRESENTADOS=[]; let REPRE_CERT='';
+async function cargarRepresentados(){ try{ const r=await api('/api/representados?perfil='+PERFIL); REPRESENTADOS=r.representados||[]; }catch(_){ REPRESENTADOS=[]; } return REPRESENTADOS; }
+async function certHolderCuit(){ try{ const {tenants}=await api('/api/tenants'); REPRE_CERT=(tenants.find(t=>t.tieneCertificado)||{}).cuit||''; }catch(_){ REPRE_CERT=''; } return REPRE_CERT; }
+function emailPorCuit(cuit){ const c=String(cuit||'').replace(/\D/g,''); const r=REPRESENTADOS.find(x=>x.cuit===c); return r?(r.email||''):''; }
+function guardarLote(){ /* persistencia desactivada en etapa de prueba: el lote es solo en memoria. Reactivar en producción (idealmente backend por usuario). */ }
+function restaurarLote(){ try{ localStorage.removeItem('arcanum_lote'); }catch(_){ } }
+restaurarLote();
+const _fmt=n=>(+n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const _perMA=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})/);return m?m[2]+'-'+m[1]:'';};
+const _clean=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+const _MMYYYY=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})/);return m?m[2]+m[1]:'';};
+function nombrePdf(r){const per=_MMYYYY(r.pHasta||r.pDesde);return _clean(r.prof)+'_'+String(r.pv).padStart(5,'0')+'-'+String(r.num).padStart(8,'0')+(per?'_'+per:'')+'.pdf';}
+async function descargarPdf(j){
+  const r=LOTE[LOTE_SEL].rows[j];
+  const url=`/api/comprobantes/${EMISOR_CUIT}/${r.pv}/11/${r.num}/pdf`;
+  toast('Descargando PDF…');
+  try{
+    const resp=await fetch(url,{credentials:'include'});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const blob=await resp.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=nombrePdf(r);
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }catch(e){ toast('No se pudo descargar el PDF',true); }
+}
+
+async function vEmitir(){
+  if(PERFIL==='pyme') return vEmitirPymeHome();
+  const v=$('#view');
+  const {tenants}=await api('/api/tenants');
+  const conCert=tenants.filter(t=>t.tieneCertificado);
+  if(!conCert.length){ v.innerHTML=`<div class="hero reveal"><h2>Cargá un certificado para emitir</h2><p>Necesitás al menos un cliente con certificado vigente.</p><div class="row"><button class="primary" onclick="go('clientes')">Ir a Clientes</button></div></div>`; return; }
+  REPRE_CERT=conCert[0].cuit;
+  if(!EMISOR_CUIT) EMISOR_CUIT=conCert[0].cuit;
+  await cargarRepresentados();
+  guardarLote();
+  if(LOTE_SEL===null) vEmitirLista(v); else vEmitirDetalle(v);
+}
+
+function filtrarLoteOS(v){ LOTE_FILTRO_OS=v; if(LOTE_SEL===null) vEmitirLista($('#view')); }
+function vaciarLote(){
+  if(!LOTE.length){ toast('No hay lote cargado'); return; }
+  modal(`<h3>Vaciar lote</h3><p>Vas a quitar <b>${LOTE.length}</b> comprobante(s) global(es) del lote en pantalla. No borra nada en ARCA ni en Seguimiento.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" style="background:#c0392b;border-color:#c0392b" onclick="confirmarVaciarLote()">Vaciar</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+function confirmarVaciarLote(){ LOTE=[]; LOTE_SEL=null; LOTE_FILTRO_OS=''; guardarLote(); closeModal(); vEmitir(); toast('Lote vaciado'); }
+function repAfin(r){
+  const cuit=String(r.cuit||'').replace(/\D/g,'');
+  if(cuit){ const m=REPRESENTADOS.find(x=>x.cuit===cuit); if(m) return m; }
+  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  const pn=norm(r.prof); if(!pn) return null;
+  let m=REPRESENTADOS.find(x=>norm(x.razon_social)===pn); if(m) return m;
+  m=REPRESENTADOS.find(x=>{ const rn=norm(x.razon_social); return rn && (rn.includes(pn)||pn.includes(rn)); });
+  return m||null;
+}
+function cambiarEmisorDet(){
+  const inp=$('#e_emisor'); if(!inp) return;
+  const v=(inp.value||'').replace(/\D/g,''); const info=$('#e_emisor_info');
+  if(v===REPRE_CERT){ EMISOR_CUIT=REPRE_CERT; EMISOR_REP=null; if(info) info.textContent='Emisor: vos (certificado propio)'; return; }
+  const rep=REPRESENTADOS.find(x=>x.cuit===v);
+  if(rep){ EMISOR_CUIT=rep.cuit; EMISOR_REP=REPRE_CERT; if(info) info.innerHTML='Emisor: <b>'+(rep.razon_social||rep.cuit)+'</b> (representado)'; }
+  else if(info) info.textContent = v.length===11?'Ese CUIT no está en tus representados':'';
+}
+function vEmitirLista(v){
+  if(!LOTE.length){
+    v.innerHTML=`<div class="hero reveal">
+       <h2>Detalle de facturación a emitir</h2>
+       <p>Importá tu lote (.xlsx): cada fila es un profesional, agrupados por comprobante global de la asociación. Después emitís cada uno y obtenés su CAE.</p>
+       <div class="row"><button class="primary" onclick="$('#fileLote').click()">Importar lote (.xlsx)</button></div>
+       <input type="file" id="fileLote" accept=".xlsx" style="display:none" onchange="importarLote(this)"></div>`;
+    return;
+  }
+  const rows=LOTE.map((g,i)=>{
+    if(LOTE_FILTRO_OS && g.obraSocial!==LOTE_FILTRO_OS) return '';
+    const emit=g.rows.filter(r=>r.estado==='ok'||r.estado==='recibida').length, tot=g.rows.length, pct=Math.round(100*emit/tot);
+    const totalG=g.rows.reduce((a,r)=>a+(+r.total||0),0);
+    const per=_perMA(g.rows[0]&&(g.rows[0].pHasta||g.rows[0].pDesde));
+    return `<tr ondblclick="abrirGlobal(${i})">
+      <td style="padding-left:16px;text-align:center"><input type="checkbox" class="selglob" data-i="${i}" onclick="event.stopPropagation()" onchange="actualizarSelGlob()"></td>
+      <td class="mono">${g.global}</td><td>${g.obraSocial}</td>
+      <td class="mono">${per||'—'}</td>
+      <td class="num">$ ${_fmt(totalG)}</td>
+      <td><div class="progw"><span class="progp">${pct}%</span><div class="prog"><i style="width:${pct}%"></i></div></div></td>
+      <td class="mono">${emit}/${tot}</td>
+      <td style="padding-right:16px;text-align:right"><button class="primary" onclick="abrirGlobal(${i})">Ver detalle</button></td></tr>`;
+  }).join('');
+  v.innerHTML=`<div class="row"><h2 style="margin:0;text-transform:none;font-size:18px;letter-spacing:-.2px;color:var(--ink)">Detalle de facturación a emitir</h2>
+    <select onchange="filtrarLoteOS(this.value)" style="margin-left:2px;max-width:300px" title="Filtrar por obra social">
+      <option value="">Todas las obras sociales</option>
+      ${[...new Set(LOTE.map(g=>g.obraSocial).filter(Boolean))].sort().map(o=>`<option value="${String(o).replace(/"/g,'&quot;')}" ${LOTE_FILTRO_OS===o?'selected':''}>${o}</option>`).join('')}
+    </select>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button id="btnDelGlob" class="ghost" style="display:none" onclick="eliminarGlobsSeleccionados()">Eliminar selección</button>
+      <button class="ghost" onclick="vaciarLote()">Vaciar lote</button>
+      <button onclick="$('#fileLote').click()">Importar lote (.xlsx)</button>
+    </div>
+    <input type="file" id="fileLote" accept=".xlsx" style="display:none" onchange="importarLote(this)"></div>
+   <div class="card" style="margin-top:12px;padding:6px 0;overflow-x:auto"><table><thead><tr>
+     <th style="padding-left:16px;width:34px;text-align:center"><input type="checkbox" id="selAllGlob" onchange="toggleSelAllGlob(this)"></th><th>Comprobante global</th><th>Obra social</th><th>Período</th><th class="num">Total</th><th>Avance</th><th>Facturadas</th><th style="padding-right:16px"></th>
+   </tr></thead><tbody>${rows}</tbody></table></div>
+   <p class="hint" style="margin-top:10px">Doble clic en una fila también abre el detalle. En homologación las emisiones salen con tu CUIT.</p>`;
+}
+
+function importarLote(input){
+  const file=input.files[0]; if(!file) return;
+  const rd=new FileReader();
+  rd.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      const map={};
+      data.forEach(r=>{
+        const g=String(r.ComprobanteGlobal||'').trim(); if(!g) return;
+        if(!map[g]) map[g]={global:g,obraSocial:r.ObraSocial||'',cuitOS:String(r.CuitObraSocial||''),presentacion:String(r.Presentacion||''),rows:[]};
+        map[g].rows.push({prof:r.Profesional||'',mat:String(r.Matricula||''),resp:r.RespFiscal||'',tipo:String(r.TipoComprobante||'C'),pDesde:String(r.PeriodoDesde||''),pHasta:String(r.PeriodoHasta||''),
+          exento:+r.Exento||0,gravado:+r.Gravado||0,iva:+r.IVA||0,total:(+r.Exento||0)+(+r.Gravado||0)+(+r.IVA||0),estado:'pend',cae:null,pv:null,num:null,err:null});
+      });
+      const nuevos=Object.values(map);
+      input.value='';
+      // Validación: un Comprobante global ya importado no se vuelve a traer ni se le suman líneas (mismo emisor)
+      const existentes=new Set(LOTE.map(g=>g.global));
+      const dups=nuevos.filter(ng=>existentes.has(ng.global));
+      if(dups.length){
+        PENDIMP=nuevos;
+        const lista=dups.slice(0,15).map(d=>`<li><span class="mono">${d.global}</span>${d.obraSocial?(' · '+d.obraSocial):''}</li>`).join('');
+        modal(`<h3>Comprobante global duplicado</h3>
+          <p>Estos comprobantes globales <b>ya están importados</b> (mismo número y emisor). No se vuelven a importar ni se les suman líneas:</p>
+          <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;max-height:32vh;overflow:auto">${lista}${dups.length>15?`<li>…y ${dups.length-15} más</li>`:''}</ul>
+          <div class="row" style="margin-top:14px"><button class="primary" onclick="confirmarImport(true)">Importar solo los nuevos</button><button onclick="confirmarImport(false)">Cancelar</button></div>`);
+        return;
+      }
+      mergeLote(nuevos);
+    }catch(err){ toast('No pude leer el Excel: '+err.message,true); }
+  };
+  rd.readAsArrayBuffer(file);
+}
+
+let PENDIMP=null;
+function mergeLote(nuevos){
+  const existentes=new Set(LOTE.map(g=>g.global));
+  let added=0, skipped=0;
+  nuevos.forEach(ng=>{ if(existentes.has(ng.global)){ skipped++; return; } LOTE.push(ng); existentes.add(ng.global); added++; });
+  LOTE_SEL=null;
+  toast('Importado: '+added+' comprobante(s) global(es)'+(skipped?(' · '+skipped+' duplicado(s) omitido(s)'):'')); vEmitir();
+}
+function confirmarImport(soloNuevos){
+  closeModal();
+  if(!soloNuevos || !PENDIMP){ PENDIMP=null; toast('Importación cancelada'); return; }
+  mergeLote(PENDIMP); PENDIMP=null;
+}
+
+let DELGLOB=[], DELROWS=[];
+function actualizarSelGlob(){
+  const n=document.querySelectorAll('.selglob:checked').length;
+  const b=$('#btnDelGlob'); if(b){ b.style.display=n?'inline-flex':'none'; b.textContent='Eliminar selección ('+n+')'; }
+  const all=$('#selAllGlob'), tot=document.querySelectorAll('.selglob').length;
+  if(all) all.checked = n>0 && n===tot;
+}
+function toggleSelAllGlob(cb){ document.querySelectorAll('.selglob').forEach(c=>c.checked=cb.checked); actualizarSelGlob(); }
+function eliminarGlobsSeleccionados(){
+  DELGLOB=[...document.querySelectorAll('.selglob:checked')].map(c=>+c.dataset.i);
+  if(!DELGLOB.length) return;
+  modal(`<h3>Eliminar comprobantes globales</h3><p>Vas a eliminar <b>${DELGLOB.length}</b> comprobante(s) global(es) del lote. Esta acción no se puede deshacer.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" style="background:#c0392b;border-color:#c0392b" onclick="confirmarEliminarGlobs()">Eliminar</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+function confirmarEliminarGlobs(){
+  const s=new Set(DELGLOB);
+  LOTE=LOTE.filter((_,i)=>!s.has(i));
+  closeModal(); vEmitir(); toast('Eliminado del lote: '+s.size+' global(es)');
+}
+function eliminarFilasSeleccionadas(){
+  DELROWS=[...document.querySelectorAll('.selrow:checked')].map(c=>+c.dataset.j);
+  if(!DELROWS.length) return;
+  modal(`<h3>Eliminar filas</h3><p>Vas a eliminar <b>${DELROWS.length}</b> profesional(es) de este comprobante global. No se puede deshacer.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" style="background:#c0392b;border-color:#c0392b" onclick="confirmarEliminarFilas()">Eliminar</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+function confirmarEliminarFilas(){
+  const s=new Set(DELROWS), g=LOTE[LOTE_SEL];
+  g.rows=g.rows.filter((_,j)=>!s.has(j));
+  closeModal(); vEmitir(); toast('Filas eliminadas: '+s.size);
+}
+
+function abrirGlobal(i){ LOTE_SEL=i; vEmitir(); window.scrollTo({top:0,behavior:'smooth'}); }
+function volverLote(){ LOTE_SEL=null; vEmitir(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function vEmitirDetalle(v){
+  const g=LOTE[LOTE_SEL];
+  const m=n=>(+n)?_fmt(n):'—';
+  const per=(g.rows[0]&&g.rows[0].pDesde)?(g.rows[0].pDesde+' a '+g.rows[0].pHasta):'';
+  const esPend=r=>!(r.estado==='ok'||r.estado==='recibida'||r.estado==='solicitada');
+  const rows=g.rows.map((r,j)=>{
+    const pdfLink=`<button class="ghost" style="padding:3px 8px" onclick="descargarPdf(${j})">PDF</button>`;
+    const est=r.estado==='ok'?`<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><span class="tag ok">CAE ${r.cae}</span>${pdfLink}</span>`
+      :r.estado==='recibida'?`<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><span class="tag ok">CAE ${r.cae} · recibida</span>${r.pdfUrl?`<a href="${r.pdfUrl}" target="_blank"><button class="ghost" style="padding:3px 8px">PDF</button></a>`:''}</span>`
+      :r.estado==='solicitada'?`<span class="tag warn">solicitada</span>`
+      :r.estado==='err'?`<span class="tag no" title="${(r.err||'').replace(/"/g,'')}">rechazada</span>`:`<span class="tag warn">pendiente</span>`;
+    const pend=esPend(r);
+    const chk=pend?`<input type="checkbox" class="selrow" data-j="${j}" onchange="actualizarSel()">`:'';
+    let acc='';
+    if(r.estado==='recibida') acc=`<button class="ghost" style="padding:5px 8px" title="Editar / reemplazar" onclick="cargarRecibida(${j})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>`;
+    else if(r.estado==='solicitada') acc=`<button class="ghost" style="padding:5px 10px;white-space:nowrap" onclick="cargarRecibida(${j})">Cargar factura</button>`;
+    else if(pend) acc=`<button class="primary" style="padding:5px 10px" onclick="previewEmision(${j})">Emitir CAE</button>`;
+    return `<tr><td style="padding-left:16px;text-align:center">${chk}</td><td style="white-space:nowrap">${r.prof}</td><td class="mono">${r.mat}</td><td>${r.resp}</td>
+      <td class="num">${m(r.exento)}</td><td class="num">${m(r.gravado)}</td><td class="num">${m(r.iva)}</td>
+      <td class="num">$ ${_fmt(r.total)}</td><td>${est}</td><td style="padding-right:16px;text-align:right">${acc}</td></tr>`;
+  }).join('');
+  const emit=g.rows.filter(r=>r.estado==='ok'||r.estado==='recibida').length;
+  const pendientes=g.rows.filter(esPend).length;
+  v.innerHTML=`<div class="row"><button onclick="volverLote()">← Volver</button>
+     <span class="mono" style="margin-left:6px">${g.global}</span> · <strong>${g.obraSocial}</strong>
+     <span class="hint">· presentación ${g.presentacion}</span>
+     <span class="tag" style="margin-left:auto">${emit}/${g.rows.length} facturadas</span></div>
+   <div class="card reveal" style="margin-top:10px"><strong>Receptor:</strong> ${g.obraSocial} · CUIT <span class="mono">${g.cuitOS}</span>${per?` &nbsp;·&nbsp; <strong>Período:</strong> <span class="mono">${per}</span>`:''}<span class="hint"> — se precarga en cada emisión.</span></div>
+   <div class="row" style="margin-top:10px"><span class="hint">Tildá profesionales para pedirles la factura en lote, o para eliminar filas mal importadas.</span>
+     <div style="margin-left:auto;display:flex;gap:8px">
+       <button id="btnDelRow" class="ghost" style="display:none" onclick="eliminarFilasSeleccionadas()">Eliminar selección</button>
+       <button id="btnSel" class="primary" disabled onclick="solicitarSeleccionados()">Solicitar a seleccionados (0)</button>
+     </div></div>
+   <div class="card" style="margin-top:10px;padding:6px 0;overflow-x:auto"><table><thead><tr>
+     <th style="padding-left:16px;width:34px;text-align:center">${pendientes?`<input type="checkbox" id="selAll" onchange="toggleSelAll(this)">`:''}</th><th style="white-space:nowrap">Profesional</th><th>Mat.</th><th>Resp.</th><th class="num">Exento</th><th class="num">Gravado</th><th class="num">IVA</th><th class="num">Total</th><th>Estado</th><th style="padding-right:16px"></th>
+   </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function previewEmision(j){
+  const g=LOTE[LOTE_SEL], r=g.rows[j];
+  const afin=repAfin(r);
+  if(afin){ EMISOR_CUIT=afin.cuit; EMISOR_REP=REPRE_CERT; }
+  const hoy=new Date().toISOString().slice(0,10);
+  const pd=r.pDesde||hoy, ph=r.pHasta||hoy;
+  modal(`<h3>Vista previa de emisión</h3>
+    <div class="f2"><div><label>Emisor (CUIT o nombre del representado)</label>
+        <input id="e_emisor" class="mono" list="emiList" value="${EMISOR_CUIT}" oninput="cambiarEmisorDet()" placeholder="Tu CUIT o buscá por CUIT/nombre">
+        <datalist id="emiList"><option value="${REPRE_CERT}">${REPRE_CERT} — mi certificado</option>${REPRESENTADOS.map(rp=>`<option value="${rp.cuit}">${(rp.razon_social||'')} (${rp.cuit}) (representado)</option>`).join('')}</datalist>
+        <div id="e_emisor_info" class="hint" style="margin-top:4px"></div></div>
+      <div><label>Fecha de emisión</label><input type="date" id="e_fecha" value="${hoy}"></div></div>
+    <label>Receptor (precargado)</label><input value="${g.obraSocial}" readonly>
+    <div class="f2"><div><label>CUIT receptor</label><input class="mono" value="${g.cuitOS}" readonly></div>
+      <div><label>Total</label><input class="mono" value="$ ${_fmt(r.total)}" readonly></div></div>
+    <div class="f3"><div><label>Período desde</label><input type="date" id="e_pdesde" value="${pd}"></div>
+      <div><label>Período hasta</label><input type="date" id="e_phasta" value="${ph}"></div>
+      <div><label>Vto. de pago</label><input type="date" id="e_vto" value="${ph}"></div></div>
+    <label>Detalle del concepto</label><textarea id="e_detalle" style="min-height:64px">Prestaciones médicas — ${r.prof} (Mat. ${r.mat})</textarea>
+    <p class="hint" style="margin-top:6px">${afin?('Representado detectado: <b>'+(afin.razon_social||afin.cuit)+'</b>. '):(REPRESENTADOS.length?'<b style="color:#c0392b">No se encontró un representado para '+r.prof+'; elegí el emisor arriba.</b> ':'')}Concepto: Servicios. Profesional: ${r.prof}. Comprobante global ${g.global}.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="confirmarEmision(${j})">Confirmar y obtener CAE</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+
+async function confirmarEmision(j){
+  const g=LOTE[LOTE_SEL], r=g.rows[j];
+  const fecha=$('#e_fecha').value, pd=$('#e_pdesde').value, ph=$('#e_phasta').value, vto=$('#e_vto').value;
+  const detalle=($('#e_detalle').value||'').trim()||('Prestaciones médicas — '+r.prof);
+  const docNro=(g.cuitOS||'').replace(/\D/g,'');
+  const body={ cuit:EMISOR_CUIT, perfil:PERFIL, representante: EMISOR_REP||undefined, puntoVenta:1, tipoComprobante:11, concepto:2,
+    fecha:fecha||undefined,
+    fechaServicioDesde:pd||undefined, fechaServicioHasta:ph||undefined, fechaVtoPago:vto||undefined,
+    tipoDocReceptor: docNro?80:99, nroDocReceptor: docNro||'0',
+    importeNeto:r.total, importeIva:0, importeTotal:r.total, alicuotasIva:[],
+    receptor:{ nombre:g.obraSocial, docTipo: docNro?80:99, docNro: docNro||'0', condicionIva:'IVA Responsable Inscripto',
+      global:g.global, presentacion:g.presentacion, profesional:r.prof, matricula:r.mat },
+    periodo:{ desde:pd, hasta:ph, vtoPago:vto },
+    items:[{descripcion:detalle, cantidad:1, precioUnitario:r.total, bonif:0, subtotal:r.total}] };
+  if(EMISOR_REP){ const rep=REPRESENTADOS.find(x=>x.cuit===EMISOR_CUIT); if(rep) body.emisor={ razonSocial:rep.razon_social, domicilio:rep.domicilio, condicionIva:rep.condicion_iva, mipyme:rep.mipyme }; }
+  closeModal(); toast('Emitiendo…');
+  try{
+    const res=await api('/api/wsfev1/comprobantes',{method:'POST',body:JSON.stringify(body)});
+    const c=res.comprobante;
+    if(!c.aprobado) throw new Error((c.observaciones&&c.observaciones[0]&&c.observaciones[0].message)||(c.errores&&c.errores[0]&&c.errores[0].message)||'Rechazado por ARCA');
+    r.estado='ok'; r.cae=c.cae; r.pv=c.puntoVenta; r.num=c.numero;
+    try{ await api('/api/solicitudes/cargar',{method:'POST',body:JSON.stringify({cuit:EMISOR_CUIT,global:g.global,matricula:r.mat,cae:c.cae,nroComprobante:String(c.puntoVenta).padStart(5,'0')+'-'+String(c.numero).padStart(8,'0')})}); }catch(_){}
+    vEmitir(); toast('CAE '+c.cae+' · facturado a CUIT '+c.cuit);
+  }catch(e){ r.estado='err'; r.err=e.message; vEmitir(); toast(e.message,true); }
+}
+
+function solicitarFactura(j){
+  const g=LOTE[LOTE_SEL], r=g.rows[j];
+  const per=(r.pDesde||'')+' a '+(r.pHasta||'');
+  const asunto=`Solicitud de factura - ${g.obraSocial} - periodo ${_perMA(r.pHasta||r.pDesde)}`;
+  const cuerpo=`Hola ${r.prof},\n\nTe solicito la factura por las prestaciones de ${g.obraSocial} (presentacion ${g.presentacion}), periodo ${per}, por un total de $ ${_fmt(r.total)}.\n\nPor favor emitila a nombre de ${g.obraSocial} (CUIT ${g.cuitOS}) y responde este mail adjuntando el PDF con su CAE.\n\nGracias.`;
+  modal(`<h3>Solicitar factura</h3>
+    <label>Profesional</label><input value="${r.prof}" readonly>
+    <label>Email del profesional</label><input id="s_email" value="${r.email||emailPorCuit(r.cuit)||''}" placeholder="profesional@email.com">
+    <label>Asunto</label><input id="s_asunto" value="${asunto.replace(/"/g,'&quot;')}">
+    <label>Mensaje</label><textarea id="s_msg" style="min-height:150px">${cuerpo}</textarea>
+    <p class="hint" style="margin-top:6px">Se abrirá tu programa de correo con el mensaje listo para enviar.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="enviarSolicitud(${j})">Abrir email y marcar solicitada</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+async function enviarSolicitud(j){
+  const g=LOTE[LOTE_SEL], r=g.rows[j];
+  const email=$('#s_email').value.trim(), asunto=$('#s_asunto').value, msg=$('#s_msg').value;
+  if(!email){ toast('Falta el email del profesional',true); return; }
+  r.email=email; closeModal();
+  const persistir=async()=>{ try{ await api('/api/solicitudes',{method:'POST',body:JSON.stringify({cuit:EMISOR_CUIT,global:g.global,obraSocial:g.obraSocial,cuitOS:g.cuitOS,profesional:r.prof,matricula:r.mat,email,total:r.total,periodoDesde:r.pDesde,periodoHasta:r.pHasta})}); }catch(_){} };
+  const abrirCorreo=()=>{ window.location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(msg)}`; };
+  try{
+    const res=await api('/api/solicitudes/email',{method:'POST',body:JSON.stringify({to:email,subject:asunto,body:msg})});
+    r.estado='solicitada'; await persistir(); vEmitir();
+    if(res.sent){ toast('Solicitud enviada a '+email); }
+    else { abrirCorreo(); toast('Servidor sin SMTP: se abrió tu correo'); }
+  }catch(e){ r.estado='solicitada'; await persistir(); vEmitir(); abrirCorreo(); toast('Se abrió tu correo'); }
+}
+function cargarRecibida(j){
+  const r=LOTE[LOTE_SEL].rows[j];
+  const editando=r.estado==='recibida';
+  modal(`<h3>${editando?'Editar factura recibida':'Cargar factura recibida'}</h3>
+    <p class="hint">${editando?'Reemplazá el PDF si subiste uno equivocado y/o corregí los datos.':('Subí el PDF que te envió '+r.prof+'. La app intenta leer el CAE y el número automáticamente; revisalos y confirmá.')}</p>
+    <label>PDF de la factura</label><input type="file" id="r_pdf" accept="application/pdf" onchange="procesarPdfRecibido()">
+    <div id="r_status" class="hint" style="margin:6px 0 2px"></div>
+    <div class="f2"><div><label>CAE</label><input id="r_cae" class="mono" value="${r.cae||''}" placeholder="75123456789012"></div>
+      <div><label>Nº comprobante</label><input id="r_num" class="mono" value="${r.numRec||''}" placeholder="0001-00000123"></div></div>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="guardarRecibida(${j})">Guardar</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+
+async function procesarPdfRecibido(){
+  const fpdf=$('#r_pdf').files[0]; if(!fpdf) return;
+  const st=$('#r_status'); st.textContent='Extrayendo datos del PDF…';
+  try{
+    const d=await extraerDatosFactura(fpdf);
+    if(d.cae) $('#r_cae').value=d.cae;
+    if(d.numero) $('#r_num').value=d.numero;
+    st.textContent=d.cae?('Datos extraídos del '+(d.fuente==='QR'?'código QR':'texto')+' ✓ — revisá y confirmá')
+      :'No pude leer el CAE automáticamente — cargalo a mano.';
+  }catch(e){ st.textContent='No pude procesar el PDF — cargá los datos a mano.'; }
+}
+
+async function extraerDatosFactura(file){
+  if(window.pdfjsLib && !pdfjsLib.GlobalWorkerOptions.workerSrc)
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const page=await pdf.getPage(1);
+  // 1) QR de ARCA (datos estructurados, incluye CAE y número)
+  try{
+    const viewport=page.getViewport({scale:2.5});
+    const canvas=document.createElement('canvas');
+    canvas.width=viewport.width; canvas.height=viewport.height;
+    const ctx=canvas.getContext('2d');
+    await page.render({canvasContext:ctx,viewport}).promise;
+    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const qr=jsQR(img.data,img.width,img.height);
+    if(qr&&qr.data){
+      const mp=qr.data.match(/[?&]p=([^&]+)/);
+      if(mp){
+        const b64=decodeURIComponent(mp[1]).replace(/-/g,'+').replace(/_/g,'/');
+        const j=JSON.parse(decodeURIComponent(escape(atob(b64))));
+        const cae=String(j.codAut||'');
+        const num=(j.ptoVta&&j.nroCmp)?(String(j.ptoVta).padStart(4,'0')+'-'+String(j.nroCmp).padStart(8,'0')):'';
+        if(cae) return {cae,numero:num,fuente:'QR'};
+      }
+    }
+  }catch(e){}
+  // 2) Fallback por texto
+  try{
+    const tc=await page.getTextContent();
+    const txt=tc.items.map(i=>i.str).join(' ');
+    const mcae=txt.match(/CAE\s*N?[°ºo:.\s]*?(\d{14})/i)||txt.match(/\b(\d{14})\b/);
+    const mnum=txt.match(/(\d{4,5})\s*-\s*(\d{8})/);
+    return {cae:mcae?mcae[1]:'', numero:mnum?(mnum[1].padStart(4,'0')+'-'+mnum[2]):'', fuente:'texto'};
+  }catch(e){}
+  return {cae:'',numero:'',fuente:null};
+}
+async function guardarRecibida(j){
+  const g=LOTE[LOTE_SEL], r=g.rows[j];
+  const cae=$('#r_cae').value.trim(), num=$('#r_num').value.trim(), file=$('#r_pdf').files[0];
+  if(!cae){ toast('Ingresá el CAE',true); return; }
+  r.estado='recibida'; r.cae=cae; r.numRec=num; if(file) r.pdfUrl=URL.createObjectURL(file);
+  try{ await api('/api/solicitudes/cargar',{method:'POST',body:JSON.stringify({cuit:EMISOR_CUIT,global:g.global,matricula:r.mat,cae:cae,nroComprobante:num})}); }catch(_){}
+  closeModal(); vEmitir(); toast('Factura recibida cargada');
+}
+
+function actualizarSel(){
+  const n=document.querySelectorAll('.selrow:checked').length;
+  const b=$('#btnSel'); if(b){ b.disabled=!n; b.textContent='Solicitar a seleccionados ('+n+')'; }
+  const d=$('#btnDelRow'); if(d){ d.style.display=n?'inline-flex':'none'; d.textContent='Eliminar selección ('+n+')'; }
+}
+function toggleSelAll(cb){ document.querySelectorAll('.selrow').forEach(c=>c.checked=cb.checked); actualizarSel(); }
+
+function solicitarSeleccionados(){
+  const g=LOTE[LOTE_SEL];
+  const js=[...document.querySelectorAll('.selrow:checked')].map(c=>+c.dataset.j);
+  if(!js.length){ toast('Seleccioná al menos un profesional',true); return; }
+  const per=(g.rows[0]&&g.rows[0].pDesde)?(g.rows[0].pDesde+' a '+g.rows[0].pHasta):'';
+  const filas=js.map(j=>{const r=g.rows[j];return `<div class="row" style="gap:8px"><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.prof}</span><input data-j="${j}" class="bemail" value="${r.email||emailPorCuit(r.cuit)||''}" placeholder="email@profesional.com" style="flex:1"></div>`;}).join('');
+  const tpl=`Hola {profesional},\n\nTe solicito la factura por las prestaciones de ${g.obraSocial} (presentación ${g.presentacion}), período ${per}, por un total de $ {total}.\n\nPor favor emitila a nombre de ${g.obraSocial} (CUIT ${g.cuitOS}) y respondé adjuntando el PDF con su CAE.\n\nGracias.`;
+  modal(`<h3>Solicitar facturas (${js.length})</h3>
+    <label>Mensaje <span class="hint">— se personaliza con {profesional} y {total}</span></label>
+    <textarea id="b_msg" style="min-height:120px">${tpl}</textarea>
+    <label>Emails de los profesionales</label>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto">${filas}</div>
+    <p class="hint" style="margin-top:6px">Se envía un mail individual a cada uno desde el servidor.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="enviarSeleccionados()">Enviar solicitudes</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+
+async function enviarSeleccionados(){
+  const g=LOTE[LOTE_SEL];
+  const tpl=$('#b_msg').value;
+  const items=[...document.querySelectorAll('.bemail')].map(i=>({j:+i.dataset.j,email:i.value.trim()}));
+  const faltan=items.filter(i=>!/.+@.+\..+/.test(i.email));
+  if(faltan.length){ toast('Completá los emails ('+faltan.length+' faltan o son inválidos)',true); return; }
+  closeModal(); toast('Enviando solicitudes…');
+  let ok=0, fail=0;
+  for(const it of items){
+    const r=g.rows[it.j]; r.email=it.email;
+    const msg=tpl.replace(/{profesional}/g,r.prof).replace(/{total}/g,_fmt(r.total));
+    const asunto=`Solicitud de factura - ${g.obraSocial} - periodo ${_perMA((g.rows[0]&&g.rows[0].pHasta)||'')}`;
+    try{ const res=await api('/api/solicitudes/email',{method:'POST',body:JSON.stringify({to:it.email,subject:asunto,body:msg})});
+      if(res.sent){ r.estado='solicitada'; ok++;
+        try{ await api('/api/solicitudes',{method:'POST',body:JSON.stringify({cuit:EMISOR_CUIT,global:g.global,obraSocial:g.obraSocial,cuitOS:g.cuitOS,profesional:r.prof,matricula:r.mat,email:it.email,total:r.total,periodoDesde:r.pDesde,periodoHasta:r.pHasta})}); }catch(_){}
+      } else { fail++; } }
+    catch(e){ fail++; }
+  }
+  vEmitir();
+  if(fail) toast(`Enviadas ${ok}, fallaron ${fail}. Revisá el SMTP.`, true);
+  else toast(`${ok} solicitud(es) enviada(s)`);
+}
+
+let SOLIC=[];
+function _diasDesde(f){ return Math.floor((Date.now()-new Date(f).getTime())/86400000); }
+function _colorAntig(d){ return d>15?'#c0392b':(d>=5?'#e0a800':'#1e8e3e'); }
+async function vSeguimiento(){
+  if(PERFIL==='pyme') return vSeguimientoPyme();
+  const v=$('#view'); v.innerHTML='<p class="hint">Cargando…</p>';
+  let data; try{ data=await api('/api/solicitudes?estado=pendiente'); }catch(e){ v.innerHTML='<p class="hint">No se pudo cargar el seguimiento.</p>'; return; }
+  SOLIC=data.solicitudes||[];
+  if(!SOLIC.length){ v.innerHTML=`<div class="hero reveal"><h2>Seguimiento de pendientes</h2><p>No hay solicitudes de factura pendientes de carga.</p></div>`; return; }
+  const rows=SOLIC.map((s,i)=>{
+    const d=_diasDesde(s.fecha_solicitud), c=_colorAntig(d);
+    const txt=d>15?'Crítico':(d>=5?'Atención':'En fecha');
+    return `<tr>
+      <td style="padding-left:16px;white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:8px"></span>${s.profesional||''}</td>
+      <td class="mono">${s.matricula||''}</td><td>${s.obra_social||''}</td><td class="mono">${s.global||''}</td>
+      <td class="mono">${(s.fecha_solicitud||'').slice(0,10)}</td>
+      <td class="num" style="color:${c};font-weight:600">${d} día${d===1?'':'s'}</td>
+      <td style="white-space:nowrap"><span class="tag" style="background:${c};color:#fff;display:inline-block;white-space:nowrap;vertical-align:middle">${txt}</span></td>
+      <td style="padding-right:16px;text-align:right;white-space:nowrap"><button class="ghost" style="padding:5px 10px;white-space:nowrap" onclick="reenviarSolicitud(${i})">Reenviar solicitud</button> <button class="primary" style="padding:5px 10px;white-space:nowrap" onclick="marcarCargada(${i})">Marcar cargada</button></td>
+    </tr>`;
+  }).join('');
+  v.innerHTML=`<div class="row"><h2 style="margin:0;text-transform:none;font-size:18px;letter-spacing:-.2px;color:var(--ink)">Seguimiento de pendientes</h2>
+    <span class="tag" style="margin-left:2px">${SOLIC.length} pendientes</span></div>
+   <p class="hint" style="margin-top:6px">Antigüedad desde la solicitud — <span style="color:#1e8e3e;font-weight:600">verde &lt; 5 días</span> · <span style="color:#e0a800;font-weight:600">amarillo 5 a 15</span> · <span style="color:#c0392b;font-weight:600">rojo &gt; 15</span>.</p>
+   <div class="card" style="margin-top:10px;padding:6px 0;overflow-x:auto"><table class="segtbl"><thead><tr>
+     <th style="padding-left:16px">Profesional</th><th>Mat.</th><th>Obra social</th><th>Comprobante global</th><th>Fecha solicitud</th><th class="num">Antigüedad</th><th>Estado</th><th style="padding-right:16px"></th>
+   </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+async function marcarCargada(i){
+  const s=SOLIC[i];
+  modal(`<h3>Marcar como cargada</h3><p>Vas a quitar a <b>${s.profesional||('Mat. '+s.matricula)}</b> de los pendientes porque la factura ya está cargada.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="confirmarCargada(${i})">Marcar cargada</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+async function confirmarCargada(i){
+  const s=SOLIC[i]; closeModal(); toast('Marcando…');
+  try{
+    const r=await api('/api/solicitudes/cargar',{method:'POST',body:JSON.stringify({id:s.id})});
+    toast(r&&r.updated?'Quitada de pendientes':'No se encontró la solicitud',r&&!r.updated);
+  }catch(e){ toast('No se pudo marcar',true); }
+  vSeguimiento();
+}
+function reenviarSolicitud(i){
+  const s=SOLIC[i];
+  const cuerpo=`Hola ${s.profesional},\n\nTe reenvío la solicitud de factura por las prestaciones de ${s.obra_social} (período ${s.periodo_desde||''} a ${s.periodo_hasta||''}), por un total de $ ${_fmt(s.total)}.\n\nPor favor emitila a nombre de ${s.obra_social} (CUIT ${s.cuit_os}) y respondé adjuntando el PDF con su CAE.\n\nGracias.`;
+  modal(`<h3>Reenviar solicitud</h3>
+    <label>Profesional</label><input value="${s.profesional}" readonly>
+    <label>Email</label><input id="rs_email" value="${s.email||''}" placeholder="email@profesional.com">
+    <label>Mensaje</label><textarea id="rs_msg" style="min-height:130px">${cuerpo}</textarea>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="confirmarReenvio(${i})">Reenviar</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+async function confirmarReenvio(i){
+  const s=SOLIC[i];
+  const email=$('#rs_email').value.trim(), msg=$('#rs_msg').value;
+  const asunto=`Recordatorio: solicitud de factura - ${s.obra_social} - periodo ${_MMYYYY(s.periodo_hasta||s.periodo_desde)}`;
+  if(!email){ toast('Falta el email',true); return; }
+  closeModal(); toast('Reenviando…');
+  try{
+    const res=await api('/api/solicitudes/email',{method:'POST',body:JSON.stringify({to:email,subject:asunto,body:msg})});
+    await api('/api/solicitudes/reenviar',{method:'POST',body:JSON.stringify({cuit:s.cuit_emisor,global:s.global,matricula:s.matricula})}).catch(()=>{});
+    toast(res.sent?('Solicitud reenviada a '+email):'Servidor sin SMTP: revisá la config');
+  }catch(e){ toast('No se pudo reenviar',true); }
+}
+
+/* ---------- EMITIR PyME ---------- */
+async function vEmitirPymeHome(){
+  const v=$('#view');
+  const {tenants}=await api('/api/tenants');
+  const conCert=tenants.filter(t=>t.tieneCertificado);
+  if(!conCert.length){ v.innerHTML=`<div class="hero reveal"><h2>Cargá un certificado para emitir</h2><p>Necesitás al menos un cliente con certificado vigente.</p><div class="row"><button class="primary" onclick="go('clientes')">Ir a Clientes</button></div></div>`; return; }
+  v.innerHTML=`<div class="hero reveal"><h2>Emisión — perfil PyME</h2>
+     <p>Emití un comprobante y obtené el CAE al instante, o importá comprobantes en lote.</p>
+     <div class="row"><button class="primary" onclick="vEmitirPymeForm()">Emitir y obtener CAE</button><button onclick="vImportarPyme()">Importar comprobante</button></div></div>`;
+}
+
+/* ---------- IMPORTAR COMPROBANTE (PyME) ---------- */
+async function vImportarPyme(){
+  const v=$('#view');
+  let conCert=[], reps=[];
+  try{ const t=await api('/api/tenants'); conCert=(t.tenants||[]).filter(x=>x.tieneCertificado); }catch(_){}
+  try{ const rr=await api('/api/representados?perfil='+PERFIL); reps=rr.representados||[]; }catch(_){}
+  EMISORES_VALIDOS=[...new Set([...conCert.map(t=>String(t.cuit)), ...reps.map(r=>String(r.cuit))])];
+  IMP_DATA=null; IMP_FILE=null;
+  v.innerHTML=`<div class="row"><h2 style="margin:0;text-transform:none;font-size:18px;letter-spacing:-.2px;color:var(--ink)">Importar comprobante emitido</h2></div>
+    <p class="hint" style="margin-top:6px">Subí el PDF de un comprobante ya emitido (con su CAE). El sistema lee del comprobante el CUIT del emisor, el tipo, el punto de venta y número, la fecha, el importe total, el CAE y su vencimiento. Revisás los datos y lo registrás.</p>
+    <div class="card" style="margin-top:10px;padding:18px">
+      <div id="impDrop" style="border:2px dashed var(--line);border-radius:12px;text-align:center;padding:30px;cursor:pointer;transition:.15s" onclick="document.getElementById('impFile').click()">
+        <p style="margin:0;font-weight:600;color:var(--ink)">Hacé clic para subir el PDF del comprobante</p>
+        <p class="hint" style="margin:6px 0 0">o arrastralo hasta acá</p>
+      </div>
+      <input type="file" id="impFile" accept=".pdf,application/pdf" style="display:none" onchange="leerComprobantePyme(this.files[0])">
+      <div id="impForm" style="display:none;margin-top:18px"></div>
+    </div>`;
+  const drop=document.getElementById('impDrop');
+  if(drop){
+    drop.addEventListener('dragover',e=>{e.preventDefault();drop.style.borderColor='var(--accent)';});
+    drop.addEventListener('dragleave',e=>{e.preventDefault();drop.style.borderColor='var(--line)';});
+    drop.addEventListener('drop',e=>{e.preventDefault();drop.style.borderColor='var(--line)';const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f)leerComprobantePyme(f);});
+  }
+}
+
+async function extraerComprobantePyme(file){
+  if(window.pdfjsLib && !pdfjsLib.GlobalWorkerOptions.workerSrc)
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const page=await pdf.getPage(1);
+  const out={fuente:null};
+  try{
+    const viewport=page.getViewport({scale:2.5});
+    const canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;
+    const ctx=canvas.getContext('2d');await page.render({canvasContext:ctx,viewport}).promise;
+    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const qr=jsQR(img.data,img.width,img.height);
+    if(qr&&qr.data){
+      const mp=qr.data.match(/[?&]p=([^&]+)/);
+      if(mp){
+        const b64=decodeURIComponent(mp[1]).replace(/-/g,'+').replace(/_/g,'/');
+        const j=JSON.parse(decodeURIComponent(escape(atob(b64))));
+        out.cuit=String(j.cuit||'').replace(/\D/g,'');
+        out.punto_venta=+j.ptoVta||0;out.numero=+j.nroCmp||0;out.tipo_cbte=+j.tipoCmp||0;
+        out.importe_total=+j.importe||0;out.cae=String(j.codAut||'');
+        out.doc_tipo=+j.tipoDocRec||null;out.doc_nro=j.nroDocRec?String(j.nroDocRec):'';
+        const f=String(j.fecha||'');
+        out.fecha=/^\d{4}-\d{2}-\d{2}/.test(f)?f.slice(0,10):(/^\d{8}$/.test(f)?(f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8)):'');
+        out.fuente='QR';
+      }
+    }
+  }catch(e){}
+  try{
+    const tc=await page.getTextContent();
+    const txt=tc.items.map(i=>i.str).join(' ').replace(/\s+/g,' ');
+    const before=txt.split(/RECEPTOR/i)[0]||txt;
+    const after=txt.split(/RECEPTOR/i)[1]||'';
+    if(!out.cuit){const m=before.match(/CUIT[\s:°ºN]*?(\d{11})/i);if(m)out.cuit=m[1];}
+    const ml=txt.match(/FACTURA\s+([ABC])/i);
+    out.tipoLetra=ml?ml[1].toUpperCase():({1:'A',6:'B',11:'C',201:'A',206:'B',211:'C'}[out.tipo_cbte]||'');
+    if(!out.tipo_cbte&&out.tipoLetra)out.tipo_cbte={A:1,B:6,C:11}[out.tipoLetra];
+    if(!out.punto_venta||!out.numero){const mpv=txt.match(/Punto de Venta[\s:]*?(\d{1,5})\D+N[º°o.]*\s*(\d{1,8})/i);if(mpv){out.punto_venta=out.punto_venta||+mpv[1];out.numero=out.numero||+mpv[2];}}
+    if(!out.fecha){const mf=txt.match(/Fecha de emisi[óo]n[\s:]*?(\d{2})\/(\d{2})\/(\d{4})/i);if(mf)out.fecha=mf[3]+'-'+mf[2]+'-'+mf[1];}
+    if(!out.importe_total){const mi=txt.match(/\$\s*([\d.]+,\d{2})\s*Importe Total/i)||txt.match(/Importe Total[\s:$]*?([\d.]+,\d{2})/i);if(mi)out.importe_total=parseFloat(mi[1].replace(/\./g,'').replace(',','.'));}
+    if(!out.cae){const mc=txt.match(/CAE\s*N?[°ºo:.\s]*?(\d{14})/i);if(mc)out.cae=mc[1];}
+    if(!out.cae_vto){const mv=txt.match(/Vto\.?\s*CAE[\s:]*?(\d{2})\/(\d{2})\/(\d{4})/i);if(mv)out.cae_vto=mv[3]+'-'+mv[2]+'-'+mv[1];}
+    if(!out.doc_nro){const md=after.match(/(DNI|CUIT|CUIL)[\s\S]{0,40}?(\d{7,11})/i);if(md){out.doc_nro=md[2];out.doc_tipo=/DNI/i.test(md[1])?96:(/CUIL/i.test(md[1])?86:80);}}
+    if(out.cuit||out.cae)out.fuente=out.fuente||'texto';
+  }catch(e){}
+  return out;
+}
+
+async function leerComprobantePyme(file){
+  if(!file)return;
+  const form=$('#impForm');form.style.display='block';form.innerHTML='<p class="hint">Leyendo el comprobante…</p>';
+  let d={};try{d=await extraerComprobantePyme(file);}catch(e){d={};}
+  IMP_DATA=d;IMP_FILE=file;
+  const cuitPdf=d.cuit||'';
+  const emisorOk=!!(cuitPdf&&EMISORES_VALIDOS.includes(cuitPdf));
+  let dupCae=false,dupInfo=null;
+  if(d.cae){try{const r=await api('/api/comprobantes/existe-cae?cae='+encodeURIComponent(d.cae));dupCae=!!r.existe;dupInfo=r.comprobante;}catch(_){}}
+  let alerts='';
+  if(!emisorOk)alerts+=`<div style="background:#fdeaea;border:1px solid #e0b4b4;color:#9b2c2c;border-radius:8px;padding:10px 12px;margin-bottom:10px">⚠️ El comprobante <b>no corresponde a un CUIT de emisor habilitado</b>${cuitPdf?(' (CUIT del PDF: '+cuitPdf+')'):' (no se pudo leer el CUIT del emisor)'}. Verificá que sea tu comprobante o el de un representado tuyo.</div>`;
+  if(dupCae)alerts+=`<div style="background:#fdeaea;border:1px solid #e0b4b4;color:#9b2c2c;border-radius:8px;padding:10px 12px;margin-bottom:10px">⚠️ <b>Comprobante ya ingresado:</b> el CAE ${d.cae} ya está registrado${dupInfo?(' — CUIT '+dupInfo.cuit+', PV '+String(dupInfo.punto_venta).padStart(4,'0')+' Nº '+String(dupInfo.numero).padStart(8,'0')):''}.</div>`;
+  if(!d.fuente)alerts+=`<div style="background:#fff7e6;border:1px solid #f0d699;color:#8a6d1b;border-radius:8px;padding:10px 12px;margin-bottom:10px">No pude leer los datos automáticamente. Completá los campos a mano.</div>`;
+  const tipoLetra=d.tipoLetra||({1:'A',6:'B',11:'C'}[d.tipo_cbte]||'C');
+  const opt=(val,lab,sel)=>`<option value="${val}" ${sel?'selected':''}>${lab}</option>`;
+  const bloque=emisorOk&&!dupCae;
+  form.innerHTML=alerts+`
+    <div class="f2">
+      <div><label>CUIT emisor</label><input id="imp_cuit" class="mono" value="${cuitPdf}"></div>
+      <div><label>Tipo</label><select id="imp_tipo">${opt('A','Factura A',tipoLetra==='A')}${opt('B','Factura B',tipoLetra==='B')}${opt('C','Factura C',tipoLetra==='C')}</select></div>
+      <div><label>Punto de venta</label><input id="imp_pv" class="mono" value="${d.punto_venta||''}"></div>
+      <div><label>Número</label><input id="imp_num" class="mono" value="${d.numero||''}"></div>
+      <div><label>Fecha de emisión</label><input id="imp_fecha" type="date" value="${d.fecha||''}"></div>
+      <div><label>Importe total</label><input id="imp_total" class="mono" value="${d.importe_total||''}"></div>
+      <div><label>CAE</label><input id="imp_cae" class="mono" value="${d.cae||''}"></div>
+      <div><label>Vto. CAE</label><input id="imp_vto" type="date" value="${d.cae_vto||''}"></div>
+      <div><label>Tipo doc. receptor</label><select id="imp_doctipo">${opt('96','DNI',d.doc_tipo===96)}${opt('80','CUIT',d.doc_tipo===80)}${opt('86','CUIL',d.doc_tipo===86)}${opt('99','Consumidor final',!d.doc_tipo||d.doc_tipo===99)}</select></div>
+      <div><label>Nº documento receptor</label><input id="imp_docnro" class="mono" value="${d.doc_nro||''}"></div>
+      <div style="grid-column:1/-1"><label>Receptor (razón social / apellido y nombre)</label><input id="imp_recnom" value="${(d.receptorNombre||'').replace(/"/g,'&quot;')}"></div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="primary" ${bloque?'':'disabled'} onclick="registrarComprobantePyme()">Registrar comprobante</button>
+      <button onclick="vImportarPyme()">Subir otro</button>
+      ${d.fuente?('<span class="hint" style="margin-left:auto">Leído por '+(d.fuente==='QR'?'QR de ARCA':'texto del PDF')+'</span>'):''}
+    </div>`;
+}
+
+function _montoImp(v){ v=String(v||'').trim(); if(/,\d{1,2}$/.test(v)) v=v.replace(/\./g,'').replace(',','.'); else v=v.replace(/,/g,''); const n=parseFloat(v); return isNaN(n)?0:n; }
+async function registrarComprobantePyme(){
+  const tipoLetra=$('#imp_tipo').value, tipo_cbte={A:1,B:6,C:11}[tipoLetra]||11;
+  const body={
+    perfil:'pyme',
+    cuit:($('#imp_cuit').value||'').replace(/\D/g,''),
+    tipo_cbte,
+    punto_venta:parseInt(($('#imp_pv').value||'').replace(/\D/g,''))||0,
+    numero:parseInt(($('#imp_num').value||'').replace(/\D/g,''))||0,
+    fecha:$('#imp_fecha').value||null,
+    cae_vto:$('#imp_vto').value||null,
+    importe_total:_montoImp($('#imp_total').value),
+    cae:($('#imp_cae').value||'').replace(/\D/g,''),
+    doc_tipo:parseInt($('#imp_doctipo').value)||null,
+    doc_nro:($('#imp_docnro').value||'').replace(/\D/g,''),
+    receptorNombre:$('#imp_recnom').value||''
+  };
+  if(body.cuit.length!==11){toast('CUIT del emisor inválido',true);return;}
+  if(!body.cae){toast('Falta el CAE',true);return;}
+  if(!body.punto_venta||!body.numero){toast('Faltan punto de venta o número',true);return;}
+  if(!EMISORES_VALIDOS.includes(body.cuit)){toast('El CUIT no corresponde a un emisor habilitado',true);return;}
+  toast('Registrando…');
+  try{
+    const r=await api('/api/comprobantes/importar',{method:'POST',body:JSON.stringify(body)});
+    if(r&&r.ok){ toast('Comprobante registrado'); vImportarPyme(); }
+  }catch(e){ toast((e&&e.message)||'No se pudo registrar',true); }
+}
+
+async function vEmitirPymeForm(){
+  const v=$('#view');
+  const {tenants}=await api('/api/tenants');
+  const conCert=tenants.filter(t=>t.tieneCertificado);
+  await cargarRepresentados(); REPRE_CERT=(conCert[0]||{}).cuit||'';
+  const certOpts=conCert.map(t=>`<option value="${t.cuit}">${t.cuit}${t.nombre?(' - '+t.nombre):''} (propio)</option>`).join('');
+  const repOpts=REPRESENTADOS.map(r=>`<option value="${r.cuit}">${(r.razon_social||'')} (${r.cuit}) (representado)</option>`).join('');
+  const opts=certOpts+repOpts;
+  const hoy=new Date().toISOString().slice(0,10);
+  v.innerHTML=`<div class="row"><button onclick="go('emitir')">← Volver</button><h2 style="margin:0 0 0 6px;text-transform:none;font-size:18px;letter-spacing:-.2px;color:var(--ink)">Emitir y obtener CAE</h2></div>
+   <div class="card reveal" style="margin-top:12px;max-width:780px">
+     <div class="f2"><div><label>Emisor (CUIT o nombre)</label><input id="pe_emisor" class="mono" list="peEmiList" value="${(conCert[0]||{}).cuit||''}" oninput="pymeEmisorChange()" placeholder="Tu CUIT o buscá representado"><datalist id="peEmiList">${opts}</datalist></div>
+       <div><label>Condición del emisor</label><select id="pe_cond" onchange="pymeTipos()"><option value="MONO">Monotributo</option><option value="RI">Responsable Inscripto</option><option value="EX">Exento</option></select></div></div>
+     <div class="f2"><div><label>Tipo de comprobante</label><select id="pe_tipo" onchange="pymeRecalc()"></select></div>
+       <div><label>Concepto</label><select id="pe_concepto" onchange="pymeRecalc()"><option value="1">Productos</option><option value="2">Servicios</option><option value="3">Productos y servicios</option></select></div></div>
+     <div class="f2"><div><label>Receptor — tipo de documento</label><select id="pe_doctipo" onchange="pymeRecalc()"><option value="80">CUIT</option><option value="86">CUIL</option><option value="96">DNI</option><option value="99">Consumidor final</option></select></div>
+       <div><label>Nº de documento</label><input id="pe_docnro" class="mono" placeholder="30123456789"></div></div>
+     <label>Razón social / Nombre del receptor</label><input id="pe_recnom" placeholder="Razón social">
+     <div class="f2"><div><label>Moneda</label><select id="pe_moneda" onchange="pymeMonedaView()"><option value="PES">Pesos (ARS)</option><option value="DOL">Dólares (USD)</option></select></div><div id="pe_cotiz_wrap"></div></div>
+     <div id="pe_importes"></div>
+     <div class="f2"><div><label>Fecha de emisión</label><input type="date" id="pe_fecha" value="${hoy}"></div><div id="pe_periodo_wrap"></div></div>
+     <label>Detalle</label><textarea id="pe_detalle" style="min-height:60px">Venta de productos y/o servicios</textarea>
+     <div id="pe_result" style="margin-top:10px"></div>
+     <div class="row" style="margin-top:14px"><button class="primary" onclick="pymeEmitir()">Emitir y obtener CAE</button></div>
+   </div>`;
+  pymeEmisorChange(); pymeMonedaView();
+}
+
+const PYME_C_TYPES=['11','12','13','211','212','213'];
+function pymeEmisorChange(){
+  const v=(($('#pe_emisor')&&$('#pe_emisor').value)||'').replace(/\D/g,'');
+  if(v!==REPRE_CERT){ const rep=REPRESENTADOS.find(x=>x.cuit===v); if(rep&&rep.condicion_iva){ $('#pe_cond').value=/monotributo/i.test(rep.condicion_iva)?'MONO':(/exento/i.test(rep.condicion_iva)?'EX':'RI'); } }
+  pymeTipos();
+}
+function pymeTipos(){
+  const cond=$('#pe_cond').value, sel=$('#pe_tipo');
+  let html;
+  if(cond==='RI'){
+    html=`<optgroup label="Comprobantes A"><option value="1">Factura A</option><option value="2">Nota de Débito A</option><option value="3">Nota de Crédito A</option></optgroup>`
+       +`<optgroup label="Comprobantes B"><option value="6">Factura B</option><option value="7">Nota de Débito B</option><option value="8">Nota de Crédito B</option></optgroup>`
+       +`<optgroup label="Factura de Crédito Electrónica (FCE MiPyME)"><option value="201">FCE Factura A</option><option value="202">FCE Nota de Débito A</option><option value="203">FCE Nota de Crédito A</option><option value="206">FCE Factura B</option><option value="207">FCE Nota de Débito B</option><option value="208">FCE Nota de Crédito B</option></optgroup>`;
+  } else {
+    html=`<optgroup label="Comprobantes C"><option value="11">Factura C</option><option value="12">Nota de Débito C</option><option value="13">Nota de Crédito C</option></optgroup>`
+       +`<optgroup label="Factura de Crédito Electrónica (FCE MiPyME)"><option value="211">FCE Factura C</option><option value="212">FCE Nota de Débito C</option><option value="213">FCE Nota de Crédito C</option></optgroup>`;
+  }
+  sel.innerHTML=html;
+  pymeRecalc();
+}
+function pymeMonedaView(){
+  const m=$('#pe_moneda').value, w=$('#pe_cotiz_wrap');
+  w.innerHTML = m==='PES' ? '' : `<label>Cotización (1 USD = ? ARS)</label><input id="pe_cotiz" class="mono" type="number" step="0.01" placeholder="0.00">`;
+}
+
+function pymeRecalc(){
+  const tipo=$('#pe_tipo').value, esC=PYME_C_TYPES.includes(tipo), cont=$('#pe_importes');
+  if(esC){
+    cont.innerHTML=`<label>Importe total</label><input id="pe_total" class="mono" type="number" step="0.01" placeholder="0.00" oninput="pymeTotalView()"><div id="pe_totview" class="hint" style="margin-top:6px"></div>`;
+  } else {
+    cont.innerHTML=`<div class="f2"><div><label>Neto gravado</label><input id="pe_neto" class="mono" type="number" step="0.01" placeholder="0.00" oninput="pymeTotalView()"></div>
+      <div><label>Alícuota IVA</label><select id="pe_alic" onchange="pymeTotalView()"><option value="21">21%</option><option value="10.5">10,5%</option><option value="27">27%</option><option value="0">0%</option></select></div></div>
+      <div id="pe_totview" class="hint" style="margin-top:6px"></div>`;
+  }
+  const concepto=$('#pe_concepto').value, pw=$('#pe_periodo_wrap'), hoy=new Date().toISOString().slice(0,10);
+  pw.innerHTML=(concepto==='2'||concepto==='3')
+    ? `<label>Período del servicio / Vto. pago</label><div class="row" style="gap:6px"><input type="date" id="pe_pd" value="${hoy}"><input type="date" id="pe_ph" value="${hoy}"><input type="date" id="pe_vto" value="${hoy}"></div>`
+    : '';
+  pymeTotalView();
+}
+
+function pymeTotalView(){
+  const tipo=$('#pe_tipo').value, tv=$('#pe_totview'); if(!tv) return;
+  if(PYME_C_TYPES.includes(tipo)){ const t=+(($('#pe_total')||{}).value||0); tv.textContent='Total: $ '+_fmt(t); }
+  else { const neto=+(($('#pe_neto')||{}).value||0), alic=+(($('#pe_alic')||{}).value||0), iva=Math.round(neto*alic)/100; tv.textContent=`Neto $ ${_fmt(neto)} + IVA $ ${_fmt(iva)} = Total $ ${_fmt(neto+iva)}`; }
+}
+
+async function pymeEmitir(){
+  const cuit=(($('#pe_emisor').value)||'').replace(/\D/g,''), tipo=+$('#pe_tipo').value, concepto=+$('#pe_concepto').value;
+  const representante=(cuit && cuit!==REPRE_CERT && REPRESENTADOS.some(x=>x.cuit===cuit)) ? REPRE_CERT : '';
+  const docTipo=+$('#pe_doctipo').value;
+  let docNro=($('#pe_docnro').value||'').replace(/\D/g,''); if(docTipo===99) docNro='0';
+  const recnom=$('#pe_recnom').value.trim(), fecha=$('#pe_fecha').value, detalle=($('#pe_detalle').value||'').trim();
+  const esC=PYME_C_TYPES.includes(String(tipo));
+  let neto=0, iva=0, total=0, alic=[];
+  if(esC){ total=+($('#pe_total').value||0); neto=total; }
+  else { neto=+($('#pe_neto').value||0); const a=+($('#pe_alic').value||0); iva=Math.round(neto*a)/100; total=neto+iva;
+    if(iva>0) alic=[{id:(a===21?5:a===10.5?4:a===27?6:3), baseImponible:neto, importe:iva}]; }
+  if(total<=0){ toast('Ingresá un importe válido',true); return; }
+  const moneda=$('#pe_moneda').value, cotiz = moneda==='PES'?1:(+(($('#pe_cotiz')||{}).value||0));
+  if(moneda!=='PES' && !(cotiz>0)){ toast('Ingresá la cotización del dólar',true); return; }
+  const body={ cuit, perfil:PERFIL, representante: representante||undefined, puntoVenta:1, tipoComprobante:tipo, concepto, moneda, cotizacion:cotiz,
+    tipoDocReceptor:docTipo, nroDocReceptor:docNro||'0',
+    importeNeto: esC?total:neto, importeIva: esC?0:iva, importeTotal:total, alicuotasIva:alic,
+    receptor:{ nombre:recnom||'Consumidor final', docTipo, docNro:docNro||'0' },
+    fecha:fecha||undefined,
+    items:[{descripcion:detalle||'Venta', cantidad:1, precioUnitario:total, bonif:0, subtotal:total}] };
+  if(concepto===2||concepto===3){ const pd=($('#pe_pd')||{}).value, ph=($('#pe_ph')||{}).value, vto=($('#pe_vto')||{}).value;
+    body.fechaServicioDesde=pd; body.fechaServicioHasta=ph; body.fechaVtoPago=vto; body.periodo={desde:pd,hasta:ph,vtoPago:vto}; }
+  if(representante){ const rep=REPRESENTADOS.find(x=>x.cuit===cuit); if(rep) body.emisor={ razonSocial:rep.razon_social, domicilio:rep.domicilio, condicionIva:rep.condicion_iva, mipyme:rep.mipyme }; }
+  $('#pe_result').innerHTML='<p class="hint">Emitiendo…</p>';
+  try{
+    const res=await api('/api/wsfev1/comprobantes',{method:'POST',body:JSON.stringify(body)});
+    const c=res.comprobante;
+    if(!c.aprobado) throw new Error((c.observaciones&&c.observaciones[0]&&c.observaciones[0].message)||(c.errores&&c.errores[0]&&c.errores[0].message)||'Rechazado por ARCA');
+    const num=String(c.puntoVenta).padStart(5,'0')+'-'+String(c.numero).padStart(8,'0');
+    const perBase = body.periodo ? (body.periodo.hasta||body.periodo.desde) : (fecha||'');
+    const per=_MMYYYY(perBase);
+    PYME_LAST={cuit:c.cuit,pv:c.puntoVenta,tipo:c.tipoComprobante,num:c.numero,nombre:_clean(recnom||'comprobante')+'_'+num+(per?'_'+per:'')+'.pdf'};
+    $('#pe_result').innerHTML=`<div class="card" style="border:1px solid var(--ok)"><span class="tag ok">APROBADO</span> CAE <span class="mono">${c.cae}</span> · Emisor <span class="mono">${c.cuit}</span> · Comprobante <span class="mono">${num}</span> <button class="ghost" style="padding:3px 8px;margin-left:8px" onclick="descargarPymeLast()">PDF</button></div>`;
+    toast('CAE obtenido: '+c.cae);
+  }catch(e){ $('#pe_result').innerHTML=`<div class="card"><span class="tag no">RECHAZADO</span> ${e.message}</div>`; toast(e.message,true); }
+}
+
+let PYME_LAST=null;
+async function descargarPymeLast(){
+  if(!PYME_LAST) return; const p=PYME_LAST;
+  try{ const resp=await fetch(`/api/comprobantes/${p.cuit}/${p.pv}/${p.tipo}/${p.num}/pdf`,{credentials:'include'}); if(!resp.ok) throw 0;
+    const blob=await resp.blob(), a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=p.nombre;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }catch(e){ toast('No se pudo descargar el PDF',true); }
+}
+
+/* ---------- SEGUIMIENTO PyME ---------- */
+async function vSeguimientoPyme(){
+  const v=$('#view'); v.innerHTML='<p class="hint">Cargando…</p>';
+  let data; try{ data=await api('/api/comprobantes?perfil='+PERFIL); }catch(e){ v.innerHTML='<p class="hint">No se pudo cargar.</p>'; return; }
+  CBTES=data.comprobantes||[];
+  if(!CBTES.length){ v.innerHTML=`<div class="hero reveal"><h2>Seguimiento de envíos</h2><p>Todavía no emitiste comprobantes en este entorno.</p></div>`; return; }
+  const rows=CBTES.map((c,i)=>{
+    const meta=c.meta||{}, cliente=(meta.receptor&&meta.receptor.nombre)||'—';
+    const num=String(c.punto_venta).padStart(5,'0')+'-'+String(c.numero).padStart(8,'0');
+    const fch=String(c.fecha||'').slice(0,10);
+    const enviada=!!c.enviado_at;
+    const est=enviada?`<span class="tag" style="background:#1e8e3e;color:#fff">enviada</span>`:`<span class="tag" style="background:#e0a800;color:#fff">pendiente</span>`;
+    const btn=enviada
+      ?`<button class="ghost" style="padding:5px 10px;white-space:nowrap" onclick="enviarFacturaPyme(${i})">Reenviar</button>`
+      :`<button class="primary" style="padding:5px 10px;white-space:nowrap" onclick="enviarFacturaPyme(${i})">Enviar factura por mail</button>`;
+    return `<tr><td style="padding-left:16px;text-align:center"><input type="checkbox" class="selcbte" data-i="${i}" onchange="actualizarSelCbte()"></td><td style="white-space:nowrap">${cliente}</td><td class="mono">${c.doc_nro||''}</td><td class="mono">${num}</td><td class="mono">${fch}</td><td>${est}</td><td style="padding-right:16px;text-align:right">${btn}</td></tr>`;
+  }).join('');
+  v.innerHTML=`<div class="row"><h2 style="margin:0;text-transform:none;font-size:18px;letter-spacing:-.2px;color:var(--ink)">Seguimiento de envíos</h2>
+    <span class="tag" style="margin-left:2px">${CBTES.length} comprobantes</span>
+    <button id="btnEnvSel" class="primary" style="margin-left:auto;display:none" onclick="enviarFacturasSeleccionadas()">Enviar a seleccionados (0)</button></div>
+   <p class="hint" style="margin-top:6px">Enviá cada factura al cliente por mail (se adjunta el PDF) y queda registrada como <b>enviada</b>.</p>
+   <div class="card" style="margin-top:10px;padding:6px 0;overflow-x:auto"><table class="segtbl"><thead><tr>
+     <th style="padding-left:16px;width:34px;text-align:center"><input type="checkbox" id="selAllCbte" onchange="toggleSelAllCbte(this)"></th><th>Cliente</th><th>CUIT / Doc</th><th>N° Comprobante</th><th>Fecha</th><th>Estado</th><th style="padding-right:16px"></th>
+   </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function enviarFacturaPyme(i){
+  const c=CBTES[i], meta=c.meta||{}, cliente=(meta.receptor&&meta.receptor.nombre)||'';
+  const num=String(c.punto_venta).padStart(5,'0')+'-'+String(c.numero).padStart(8,'0');
+  const cuerpo=mailFacturaBody(cliente,num);
+  modal(`<h3>Enviar factura por mail</h3>
+    <label>Cliente</label><input value="${cliente}" readonly>
+    <label>Email del cliente</label><input id="ef_email" value="${c.enviado_to||''}" placeholder="cliente@email.com">
+    <label>Asunto</label><input id="ef_asunto" value="Factura ${num}">
+    <label>Mensaje</label><textarea id="ef_msg" style="min-height:110px">${cuerpo}</textarea>
+    <p class="hint" style="margin-top:8px">Se adjunta el PDF de la factura automáticamente.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="confirmarEnvioFactura(${i})">Enviar</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+async function confirmarEnvioFactura(i){
+  const c=CBTES[i], to=$('#ef_email').value.trim(), subject=$('#ef_asunto').value, body=$('#ef_msg').value;
+  if(!to){ toast('Falta el email del cliente',true); return; }
+  closeModal(); toast('Enviando factura…');
+  try{
+    const res=await api(`/api/comprobantes/${c.cuit}/${c.punto_venta}/${c.tipo_cbte}/${c.numero}/enviar`,{method:'POST',body:JSON.stringify({to,subject,body})});
+    if(res.sent){ toast('Factura enviada a '+to); vSeguimiento(); }
+    else { toast(res.reason||'No se pudo enviar (revisá SMTP)',true); }
+  }catch(e){ toast('No se pudo enviar',true); }
+}
+
+let ENVSEL=[];
+function mailFacturaBody(cliente,num){
+  return `Hola ${cliente},\n\nLe adjuntamos la factura N° ${num}.\n\nGracias por confiar en nuestros servicios.\n\n¡Saludos!\nEquipo de Administración y Finanzas.`;
+}
+function actualizarSelCbte(){
+  const n=document.querySelectorAll('.selcbte:checked').length;
+  const b=$('#btnEnvSel'); if(b){ b.style.display=n?'inline-flex':'none'; b.textContent='Enviar a seleccionados ('+n+')'; }
+  const all=$('#selAllCbte'), tot=document.querySelectorAll('.selcbte').length;
+  if(all) all.checked = n>0 && n===tot;
+}
+function toggleSelAllCbte(cb){ document.querySelectorAll('.selcbte').forEach(c=>c.checked=cb.checked); actualizarSelCbte(); }
+function enviarFacturasSeleccionadas(){
+  ENVSEL=[...document.querySelectorAll('.selcbte:checked')].map(c=>+c.dataset.i);
+  if(!ENVSEL.length) return;
+  const filas=ENVSEL.map(i=>{
+    const c=CBTES[i], meta=c.meta||{}, cliente=(meta.receptor&&meta.receptor.nombre)||'—';
+    const num=String(c.punto_venta).padStart(5,'0')+'-'+String(c.numero).padStart(8,'0');
+    return `<tr><td style="padding:4px 8px;white-space:nowrap">${cliente}</td><td class="mono" style="padding:4px 8px">${num}</td><td style="padding:4px 8px"><input class="envmail" data-i="${i}" value="${c.enviado_to||''}" placeholder="cliente@email.com" style="width:100%"></td></tr>`;
+  }).join('');
+  modal(`<h3>Enviar facturas por mail (${ENVSEL.length})</h3>
+    <p class="hint">Completá el email de cada cliente. Se adjunta el PDF y se usa el mensaje estándar de Administración y Finanzas.</p>
+    <div style="max-height:48vh;overflow:auto"><table style="width:100%"><thead><tr><th style="text-align:left;padding:4px 8px">Cliente</th><th style="text-align:left;padding:4px 8px">N°</th><th style="text-align:left;padding:4px 8px">Email</th></tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="confirmarEnvioSeleccion()">Enviar a todos</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+async function confirmarEnvioSeleccion(){
+  const jobs=[...document.querySelectorAll('.envmail')].map(inp=>({i:+inp.dataset.i,to:inp.value.trim()})).filter(j=>j.to);
+  if(!jobs.length){ toast('Completá al menos un email',true); return; }
+  closeModal(); toast('Enviando '+jobs.length+' factura(s)…');
+  let ok=0, fail=0;
+  for(const j of jobs){
+    const c=CBTES[j.i], meta=c.meta||{}, cliente=(meta.receptor&&meta.receptor.nombre)||'';
+    const num=String(c.punto_venta).padStart(5,'0')+'-'+String(c.numero).padStart(8,'0');
+    try{ const res=await api(`/api/comprobantes/${c.cuit}/${c.punto_venta}/${c.tipo_cbte}/${c.numero}/enviar`,{method:'POST',body:JSON.stringify({to:j.to,subject:'Factura '+num,body:mailFacturaBody(cliente,num)})});
+      if(res.sent) ok++; else fail++; }catch(e){ fail++; }
+  }
+  toast('Enviadas: '+ok+(fail?(' · fallaron '+fail):'')); vSeguimiento();
+}
+
+/* ---------- REPRESENTADOS ---------- */
+async function vRepresentados(){
+  const v=$('#view'); v.innerHTML='<p class="hint">Cargando…</p>';
+  await cargarRepresentados(); await certHolderCuit();
+  const rows=REPRESENTADOS.map((r,i)=>`<tr>
+    <td style="padding-left:16px;white-space:nowrap">${r.razon_social||'—'}</td>
+    <td class="mono">${r.cuit}</td><td>${r.condicion_iva||'—'}</td><td>${r.email||'—'}</td>
+    <td style="padding-right:16px;text-align:right"><button class="ghost" style="padding:4px 9px" onclick="editarRepresentado(${i})">Editar</button> <button class="ghost" style="padding:4px 9px" onclick="eliminarRepresentado(${i})">Eliminar</button></td>
+  </tr>`).join('');
+  v.innerHTML=`<div class="row"><h2 style="margin:0;text-transform:none;font-size:18px;letter-spacing:-.2px;color:var(--ink)">Representados</h2>
+     <div style="margin-left:auto;display:flex;gap:8px"><button class="ghost" ${REPRE_CERT?'':'disabled'} onclick="$('#fileRep').click()">Importar (.xlsx)</button><button class="primary" ${REPRE_CERT?'':'disabled'} onclick="editarRepresentado(-1)">Agregar representado</button></div>
+     <input type="file" id="fileRep" accept=".xlsx" style="display:none" onchange="importarRepresentados(this)"></div>
+   <p class="hint" style="margin-top:6px">Personas o empresas a las que les emitís factura con tu certificado (vos sos el representante). ${REPRE_CERT?('Tu certificado: <span class="mono">'+REPRE_CERT+'</span>'):'<b style="color:#c0392b">Cargá primero un certificado en Clientes.</b>'}</p>
+   ${REPRESENTADOS.length?`<div class="card" style="margin-top:10px;padding:6px 0;overflow-x:auto"><table class="segtbl"><thead><tr><th style="padding-left:16px">Razón social</th><th>CUIT</th><th>Condición IVA</th><th>Email</th><th style="padding-right:16px"></th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="card" style="margin-top:10px"><p class="hint">Todavía no cargaste representados. Agregá el primero para poder emitir en su nombre.</p></div>'}`;
+}
+function editarRepresentado(i){
+  const r = i>=0 ? REPRESENTADOS[i] : {cuit:'',razon_social:'',email:'',condicion_iva:'Responsable Inscripto',domicilio:'',mipyme:false};
+  const sel=(x)=>r.condicion_iva===x?'selected':'';
+  modal(`<h3>${i>=0?'Editar':'Nuevo'} representado</h3>
+    <div class="f2"><div><label>CUIT</label><input id="rp_cuit" class="mono" value="${r.cuit||''}" ${i>=0?'readonly':''} placeholder="30123456789"></div>
+      <div><label>Condición IVA</label><select id="rp_cond"><option ${sel('Responsable Inscripto')}>Responsable Inscripto</option><option ${sel('Responsable Monotributo')}>Responsable Monotributo</option><option ${sel('Exento')}>Exento</option></select></div></div>
+    <label>Razón social / Nombre</label><input id="rp_rs" value="${(r.razon_social||'').replace(/"/g,'&quot;')}" placeholder="Razón social">
+    <label>Email</label><input id="rp_email" value="${(r.email||'').replace(/"/g,'&quot;')}" placeholder="cliente@email.com">
+    <label>Domicilio</label><input id="rp_dom" value="${(r.domicilio||'').replace(/"/g,'&quot;')}" placeholder="Calle 123 - Ciudad">
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" id="rp_mipyme" ${r.mipyme?'checked':''} style="width:auto"> Es MiPyME (habilita FCE)</label>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="guardarRepresentado()">Guardar</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+async function guardarRepresentado(){
+  const cuit=($('#rp_cuit').value||'').replace(/\D/g,'');
+  if(cuit.length!==11){ toast('CUIT inválido (11 dígitos)',true); return; }
+  if(!REPRE_CERT){ toast('Primero cargá un certificado en Clientes',true); return; }
+  const body={ representante:REPRE_CERT, perfil:PERFIL, cuit, razonSocial:$('#rp_rs').value.trim(), email:$('#rp_email').value.trim(), condicionIva:$('#rp_cond').value, domicilio:$('#rp_dom').value.trim(), mipyme:$('#rp_mipyme').checked };
+  try{ await api('/api/representados',{method:'POST',body:JSON.stringify(body)}); closeModal(); toast('Representado guardado'); vRepresentados(); }
+  catch(e){ toast('No se pudo guardar',true); }
+}
+function eliminarRepresentado(i){
+  const r=REPRESENTADOS[i];
+  modal(`<h3>Eliminar representado</h3><p>¿Eliminar a <b>${r.razon_social||r.cuit}</b>?</p>
+    <div class="row" style="margin-top:14px"><button class="primary" style="background:#c0392b;border-color:#c0392b" onclick="confirmarEliminarRepresentado('${r.cuit}')">Eliminar</button><button onclick="closeModal()">Cancelar</button></div>`);
+}
+async function confirmarEliminarRepresentado(cuit){
+  try{ await api('/api/representados/'+cuit+'?representante='+REPRE_CERT+'&perfil='+PERFIL,{method:'DELETE'}); closeModal(); toast('Eliminado'); vRepresentados(); }
+  catch(e){ toast('No se pudo eliminar',true); }
+}
+function importarRepresentados(input){
+  const file=input.files[0]; if(!file) return; input.value='';
+  if(!REPRE_CERT){ toast('Cargá primero un certificado en Clientes',true); return; }
+  const rd=new FileReader();
+  rd.onload=async ev=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      const norm=k=>String(k||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
+      const pick=(row,...keys)=>{ for(const k of Object.keys(row)){ if(keys.includes(norm(k))) return row[k]; } return ''; };
+      let ok=0, fail=0;
+      for(const row of data){
+        const cuit=String(pick(row,'cuit')||'').replace(/\D/g,'');
+        if(cuit.length!==11){ fail++; continue; }
+        const body={ representante:REPRE_CERT, perfil:PERFIL, cuit,
+          razonSocial:String(pick(row,'razonsocial','razon','nombre')||'').trim(),
+          email:String(pick(row,'email','mail','correo')||'').trim(),
+          condicionIva:String(pick(row,'condicioniva','condicion','iva')||'').trim()||'Responsable Inscripto',
+          domicilio:String(pick(row,'domicilio','direccion')||'').trim(),
+          mipyme:/^(si|true|x|1)$/i.test(String(pick(row,'mipyme','pyme')||'').trim()) };
+        try{ await api('/api/representados',{method:'POST',body:JSON.stringify(body)}); ok++; }catch(_){ fail++; }
+      }
+      toast('Importados: '+ok+(fail?(' · '+fail+' con error/omitidos'):'')); vRepresentados();
+    }catch(e){ toast('No pude leer el Excel: '+e.message,true); }
+  };
+  rd.readAsArrayBuffer(file);
+}
+
+/* ---------- COMPROBANTES ---------- */
+let CBTES=[];
+function nombrePdfCbte(c){
+  const meta=c.meta||{};
+  const prof=(meta.receptor&&(meta.receptor.profesional||meta.receptor.nombre))||(meta.emisor&&meta.emisor.nombre)||c.cuit;
+  const per=(meta.periodo?_MMYYYY(meta.periodo.hasta||meta.periodo.desde):'')||_MMYYYY(typeof c.fecha==='string'?c.fecha.slice(0,10):'');
+  return _clean(prof)+'_'+String(c.punto_venta).padStart(5,'0')+'-'+String(c.numero).padStart(8,'0')+(per?'_'+per:'')+'.pdf';
+}
+async function descargarCbtePdf(i){
+  const c=CBTES[i];
+  const url=`/api/comprobantes/${c.cuit}/${c.punto_venta}/${c.tipo_cbte}/${c.numero}/pdf`;
+  toast('Descargando PDF…');
+  try{
+    const resp=await fetch(url,{credentials:'include'});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const blob=await resp.blob();
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nombrePdfCbte(c);
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }catch(e){ toast('No se pudo descargar el PDF',true); }
+}
+async function vComprobantes(){
+  const v=$('#view');const {comprobantes}=await api('/api/comprobantes?perfil='+PERFIL);
+  CBTES=comprobantes;
+  const rows=comprobantes.map((c,i)=>`<tr><td class="mono">${c.cuit}</td><td class="mono">${String(c.punto_venta).padStart(5,'0')}-${String(c.numero).padStart(8,'0')}</td><td>${c.tipo_cbte}</td>
+    <td class="mono">${(c.fecha||'').slice?.(0,10)||c.fecha||''}</td><td class="mono">${c.cae||''}</td><td class="mono">$${Number(c.importe_total).toFixed(2)}</td>
+    <td><button class="ghost" onclick="descargarCbtePdf(${i})">PDF</button></td></tr>`).join('')||'<tr><td colspan="7" class="hint">Todavía no emitiste comprobantes.</td></tr>';
+  v.innerHTML=`<div class="row"><h2 style="margin:0">Comprobantes emitidos</h2><a href="/api/comprobantes/export.csv?perfil=${PERFIL}" style="margin-left:auto"><button>Exportar CSV</button></a></div>
+   <div class="card" style="margin-top:12px;overflow-x:auto"><table><thead><tr><th>CUIT</th><th>N° Comprobante</th><th>Tipo</th><th>Fecha</th><th>CAE</th><th>Total</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- WEBHOOKS ---------- */
+async function vWebhooks(){
+  const v=$('#view');const {webhooks,eventos}=await api('/api/webhooks');
+  const rows=webhooks.map(w=>`<tr><td class="mono">${w.url}</td><td class="hint">${(w.eventos||[]).join(', ')}</td>
+    <td><button class="ghost" onclick="delWebhook(${w.id})">Eliminar</button></td></tr>`).join('')||'<tr><td colspan="3" class="hint">Sin webhooks.</td></tr>';
+  v.innerHTML=`<h2>Webhooks</h2><div class="card"><table><thead><tr><th>URL</th><th>Eventos</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+   <div class="card" style="margin-top:14px;max-width:560px"><h3 style="margin-top:0">Nuevo webhook</h3>
+   <label>URL (n8n, etc.)</label><input id="w_url" class="mono" placeholder="https://...">
+   <label>Eventos</label><select id="w_ev" multiple style="height:110px">${eventos.map(e=>`<option value="${e}" selected>${e}</option>`).join('')}</select>
+   <label>Secret (opcional, para firma HMAC)</label><input id="w_secret">
+   <button class="primary" style="margin-top:14px" onclick="addWebhook()">Crear</button></div>`;
+}
+async function addWebhook(){const ev=[...$('#w_ev').selectedOptions].map(o=>o.value);
+  try{await api('/api/webhooks',{method:'POST',body:JSON.stringify({url:$('#w_url').value,eventos:ev,secret:$('#w_secret').value||null})});toast('Webhook creado');vWebhooks();}catch(e){toast(e.message,true);}}
+async function delWebhook(id){try{await api('/api/webhooks/'+id,{method:'DELETE'});vWebhooks();}catch(e){toast(e.message,true);}}
+
+/* ---------- USUARIOS ---------- */
+async function vUsuarios(){
+  const v=$('#view');const {usuarios}=await api('/api/usuarios');
+  const rows=usuarios.map(u=>`<tr><td>${u.username}</td><td><span class="tag">${u.role}</span></td><td class="hint">${u.last_login?new Date(u.last_login).toLocaleString('es-AR'):'nunca'}</td></tr>`).join('');
+  const puede=ME.role==='superadmin';
+  v.innerHTML=`<h2>Usuarios</h2><div class="card"><table><thead><tr><th>Usuario</th><th>Rol</th><th>Último ingreso</th></tr></thead><tbody>${rows}</tbody></table></div>
+   ${puede?`<div class="card" style="margin-top:14px;max-width:480px"><h3 style="margin-top:0">Nuevo usuario</h3>
+    <label>Usuario</label><input id="u_user"><label>Contraseña</label>${pwField('u_pass')}
+    <label>Rol</label><select id="u_role"><option value="operador">operador</option><option value="lectura">lectura</option><option value="admin">admin</option><option value="superadmin">superadmin</option></select>
+    <button class="primary" style="margin-top:14px" onclick="addUser()">Crear</button></div>`:'<p class="hint">Solo un superadmin puede crear usuarios.</p>'}`;
+}
+async function addUser(){try{await api('/api/usuarios',{method:'POST',body:JSON.stringify({username:$('#u_user').value,password:$('#u_pass').value,role:$('#u_role').value})});toast('Usuario creado');vUsuarios();}catch(e){toast(e.message,true);}}
+
+/* ---------- GENERADOR DE CÓDIGO ---------- */
+const GEN_PRESETS={
+  'Emitir comprobante (CAE)':{m:'POST',p:'/api/wsfev1/comprobantes',b:{cuit:'20111111112',puntoVenta:1,tipoComprobante:11,concepto:1,tipoDocReceptor:99,nroDocReceptor:'0',importeNeto:100,importeIva:21,importeTotal:121,idempotencyKey:'venta-0001',alicuotasIva:[{id:5,baseImponible:100,importe:21}]}},
+  'Último número autorizado':{m:'GET',p:'/api/wsfev1/ultimo-autorizado?cuit=20111111112&puntoVenta=1&tipoComprobante=11',b:null},
+  'Consultar comprobante':{m:'GET',p:'/api/wsfev1/consultar?cuit=20111111112&puntoVenta=1&tipoComprobante=11&numero=1',b:null},
+  'Estado WSFEv1 (dummy)':{m:'GET',p:'/api/wsfev1/status',b:null},
+  'Consultar padrón A5 (constancia)':{m:'POST',p:'/api/ws/padron_a5/getPersona_v2',b:{cuit:'20111111112',params:{idPersona:'20111111112'}}},
+  'Consultar padrón (A13)':{m:'GET',p:'/api/padron/a13/20111111112?cuit=20111111112',b:null},
+  'e-Ventanilla: listar comunicaciones':{m:'GET',p:'/api/eventanilla/comunicaciones?cuit=20111111112',b:null},
+  'e-Ventanilla: leer comunicación':{m:'GET',p:'/api/eventanilla/comunicacion/123456?cuit=20111111112',b:null},
+  'e-Ventanilla: adjuntos (metadata)':{m:'GET',p:'/api/eventanilla/comunicacion/123456/adjuntos?cuit=20111111112',b:null},
+  'e-Ventanilla: descargar PDF':{m:'GET',p:'/api/eventanilla/comunicacion/123456/adjunto?cuit=20111111112&n=0',b:null},
+  'Genérico (cualquier servicio)':{m:'POST',p:'/api/ws/wsfev1/FEDummy',b:{cuit:'20111111112',params:{}}},
+};
+async function vGenerador(){
+  const v=$('#view');
+  let services=[];
+  try{ services=(await api('/api/services')).servicios; }catch{}
+  const opts=Object.keys(GEN_PRESETS).map(k=>`<option>${k}</option>`).join('');
+  const svcOpts=services.map(s=>`<option value="${s.id}">${s.nombre}</option>`).join('');
+  v.innerHTML=`<h2>Generador de código</h2>
+   <p class="hint">Elegí el endpoint, completá los datos y copiá el nodo de n8n listo para pegar, o el snippet en tu lenguaje.</p>
+   <div class="card" style="max-width:780px">
+     <div class="f2"><div><label>Base URL <span class="hint">(para n8n en Docker: http://arcanum:8094)</span></label><input id="g_base" value="${location.origin}"></div>
+     <div><label>API key (X-API-Key)</label><input id="g_key" value="TU_API_KEY" class="mono"></div></div>
+     <label>Endpoint</label><select id="g_preset">${opts}</select>
+     <div class="f2"><div><label>Método</label><select id="g_method"><option>GET</option><option>POST</option></select></div>
+     <div><label>Ruta</label><input id="g_path" class="mono"></div></div>
+     <label>Body (JSON) <span class="hint">— sólo para POST</span></label><textarea id="g_body" class="mono"></textarea>
+   </div>
+   <div class="card" style="max-width:780px;margin-top:14px">
+     <strong>Explorar operaciones de un servicio</strong>
+     <p class="hint">Lee el WSDL en vivo y te lista las operaciones y sus campos. Tocá "Usar" para cargarla en el generador.</p>
+     <div class="row"><select id="g_svc" style="max-width:360px">${svcOpts}</select><button onclick="cargarOps()">Ver operaciones</button></div>
+     <div id="g_ops" style="margin-top:10px"></div>
+   </div>
+   <div id="g_out" style="margin-top:16px"></div>`;
+  $('#g_preset').onchange=applyPreset;
+  ['g_base','g_key','g_method','g_path','g_body'].forEach(id=>$('#'+id).oninput=genAll);
+  applyPreset();
+}
+async function cargarOps(){
+  const id=$('#g_svc').value; $('#g_ops').innerHTML='<span class="hint">Leyendo WSDL…</span>';
+  try{ const r=await api('/api/services/'+id+'/operaciones'); window._OPS={id,ops:r.operaciones};
+    $('#g_ops').innerHTML=r.operaciones.map((o,i)=>`<div class="row" style="border-top:1px solid var(--line);padding:7px 0"><div><span class="mono">${o.nombre}</span>${o.parametros.length?' <span class="hint">('+o.parametros.map(p=>p.nombre).join(', ')+')</span>':''}</div><button class="ghost" style="margin-left:auto" onclick="usarOp(${i})">Usar</button></div>`).join('')||'<span class="hint">Sin operaciones legibles en el WSDL.</span>';
+  }catch(e){ $('#g_ops').innerHTML='<span class="hint">'+e.message+'</span>'; }
+}
+function usarOp(i){
+  const {id,ops}=window._OPS, o=ops[i], params={};
+  o.parametros.forEach(p=>params[p.nombre]='');
+  $('#g_preset').value='Genérico (cualquier servicio)';
+  $('#g_method').value='POST'; $('#g_path').value='/api/ws/'+id+'/'+o.nombre;
+  $('#g_body').value=JSON.stringify({cuit:'20111111112',params},null,2);
+  genAll(); toast('Operación cargada: '+o.nombre);
+}
+function applyPreset(){const p=GEN_PRESETS[$('#g_preset').value];$('#g_method').value=p.m;$('#g_path').value=p.p;$('#g_body').value=p.b?JSON.stringify(p.b,null,2):'';genAll();}
+function genAll(){
+  const base=$('#g_base').value.replace(/\/$/,''),key=$('#g_key').value,m=$('#g_method').value,url=base+$('#g_path').value;
+  let body=null;const raw=$('#g_body').value.trim();
+  if(m==='POST'&&raw){try{body=JSON.parse(raw);}catch{body='__invalid__';}}
+  const inv=body==='__invalid__';
+  const blocks=[['n8n — copiá y pegá en el canvas',inv?'(JSON del body inválido)':genN8n(m,url,key,body)],
+    ['cURL',inv?'(JSON del body inválido)':genCurl(m,url,key,body)],
+    ['JavaScript (fetch)',inv?'(JSON del body inválido)':genJS(m,url,key,body)],
+    ['Python (requests)',inv?'(JSON del body inválido)':genPy(m,url,key,body)]];
+  $('#g_out').innerHTML=blocks.map((b,i)=>`<div class="card" style="margin-bottom:12px"><div class="row"><strong>${b[0]}</strong><button class="ghost" style="margin-left:auto" onclick="copyBlock(${i})">Copiar</button></div><pre id="gb${i}">${esc(b[1])}</pre></div>`).join('');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function copyBlock(i){navigator.clipboard.writeText($('#gb'+i).textContent);toast('Copiado');}
+function genCurl(m,url,key,body){let s=`curl -X ${m} "${url}" \\\n  -H "X-API-Key: ${key}"`;if(body){s+=` \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(body)}'`;}return s;}
+function genJS(m,url,key,body){return `const res = await fetch(${JSON.stringify(url)}, {\n  method: ${JSON.stringify(m)},\n  headers: {\n    "X-API-Key": ${JSON.stringify(key)}${body?',\n    "Content-Type": "application/json"':''}\n  }${body?`,\n  body: JSON.stringify(${JSON.stringify(body,null,2)})`:''}\n});\nconst data = await res.json();\nconsole.log(data);`;}
+function genPy(m,url,key,body){return `import requests\n\nr = requests.${m.toLowerCase()}(\n    ${JSON.stringify(url)},\n    headers={"X-API-Key": ${JSON.stringify(key)}}${body?`,\n    json=${pyLit(body,1)}`:''},\n)\nprint(r.json())`;}
+function pyLit(v,ind){const pad='    '.repeat(ind),pad0='    '.repeat(ind-1);
+  if(v===null)return 'None';if(v===true)return 'True';if(v===false)return 'False';
+  if(typeof v==='number')return String(v);if(typeof v==='string')return JSON.stringify(v);
+  if(Array.isArray(v)){return v.length?'[\n'+v.map(x=>pad+pyLit(x,ind+1)).join(',\n')+'\n'+pad0+']':'[]';}
+  const ks=Object.keys(v);return ks.length?'{\n'+ks.map(k=>pad+JSON.stringify(k)+': '+pyLit(v[k],ind+1)).join(',\n')+'\n'+pad0+'}':'{}';}
+function genN8n(m,url,key,body){
+  const hasB=m==='POST'&&body;
+  const node={parameters:{method:m,url:url,sendHeaders:true,headerParameters:{parameters:[{name:'X-API-Key',value:key}]},...(hasB?{sendBody:true,specifyBody:'json',jsonBody:JSON.stringify(body,null,2)}:{}),options:{}},
+    id:'arcanum-http-1',name:'Arcanum',type:'n8n-nodes-base.httpRequest',typeVersion:4.2,position:[680,300]};
+  return JSON.stringify({nodes:[node],connections:{}},null,2);
+}
+
+/* ---------- TEMA (claro/oscuro persistido) ---------- */
+const I_SUN='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const I_MOON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function setThemeIcon(){const dark=document.documentElement.getAttribute('data-theme')==='dark';const b=$('#themeBtn');if(b)b.innerHTML=dark?I_SUN:I_MOON;}
+function toggleTheme(){const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);try{localStorage.arcanumTheme=next;}catch(e){}setThemeIcon();}
+
+/* ---------- Ojito mostrar/ocultar contraseña ---------- */
+const I_EYE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const I_EYEOFF='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.9 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3 3.9M6.3 6.3A18 18 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 4-.8"/><path d="M3 3l18 18"/></svg>';
+function pwField(id,ph,extra){return `<div class="pwwrap"><input id="${id}" type="password" ${extra||''} ${ph?'placeholder="'+ph+'"':''}><button class="eye" type="button" tabindex="-1" aria-label="Mostrar u ocultar" onclick="togglePw('${id}',this)">${I_EYE}</button></div>`;}
+function togglePw(id,btn){const el=$('#'+id);const show=el.type==='password';el.type=show?'text':'password';btn.innerHTML=show?I_EYEOFF:I_EYE;}
+
+/* ---------- MENÚ (rayitas): Acerca de + tema + entorno + salir ---------- */
+const I_LOGOUT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>';
+function toggleMenu(){const m=$('#appmenu');const open=m.classList.toggle('open');if(open)renderMenu();}
+async function renderMenu(){
+  let cfg={entorno:ENV||'?',version:'?'};
+  try{ cfg=await api('/api/config'); }catch{}
+  const admin=['superadmin','admin'].includes(ME.role);
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  $('#appmenu').innerHTML=`
+   <div class="menu-sec"><div class="menu-h">Acerca de</div>
+     <div class="menu-row"><span>Facturador Masivo</span><span class="mono">v${cfg.version}</span></div>
+     <div class="menu-row"><span>Usuario</span><span class="mono">${ME.username}</span></div>
+     <div class="menu-row"><span>Entorno</span><span class="tag ${cfg.entorno==='prod'?'warn':''}">${String(cfg.entorno).toUpperCase()}</span></div>
+   </div>
+   <div class="menu-sec"><div class="menu-h">Tema</div>
+     <button class="menu-item" onclick="toggleTheme();renderMenu()">${dark?I_SUN:I_MOON}<span>${dark?'Tema claro':'Tema oscuro'}</span></button>
+   </div>
+   ${admin?`<div class="menu-sec"><div class="menu-h">Entorno ARCA</div>
+     <div class="menu-row"><span>Operar contra</span>
+       <select id="m_env" onchange="cambiarEntorno(this.value)">
+         <option value="homo"${cfg.entorno==='homo'?' selected':''}>Homologación</option>
+         <option value="prod"${cfg.entorno==='prod'?' selected':''}>Producción</option>
+       </select></div>
+     <div class="hint" style="padding:2px 12px 6px">Cambia los endpoints de ARCA para toda la instancia.</div></div>`:''}
+   <div class="menu-sec"><button class="menu-item" onclick="logout()">${I_LOGOUT}<span>Salir</span></button></div>`;
+}
+async function cambiarEntorno(v){
+  if(!confirm('¿Cambiar el entorno de ARCA a '+v.toUpperCase()+'? Afecta a toda la instancia.')){renderMenu();return;}
+  try{ await api('/api/config/entorno',{method:'POST',body:JSON.stringify({entorno:v})}); toast('Entorno: '+v.toUpperCase()); location.reload(); }
+  catch(e){ toast(e.message,true); renderMenu(); }
+}
+document.addEventListener('click',e=>{const m=$('#appmenu'),b=$('#menuBtn');if(m&&m.classList.contains('open')&&!m.contains(e.target)&&b&&!b.contains(e.target))m.classList.remove('open');});
+
+setThemeIcon();
+boot();
+</script>
+</body>
+</html>

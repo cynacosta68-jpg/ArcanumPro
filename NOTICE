@@ -1,0 +1,22 @@
+Arcanum — Facturador Masivo
+Copyright 2026 Acosta Cynthia Ofelia
+
+Esta es una obra derivada del proyecto "Arcanum", creado originalmente por
+Diego Alejandro Parras y licenciado bajo Apache License 2.0.
+
+El núcleo del motor (firma WSAA en CMS/PKCS#7 100% local, caché de Tickets de
+Acceso, catálogo de servicios SOAP y traducción REST <-> SOAP) proviene del
+proyecto Arcanum original y fue conservado y/o modificado en esta versión.
+
+Cambios principales de esta versión (ver README.md y CHANGELOG.md):
+- Capa de facturación masiva con dos perfiles (Asociación médica / PyME).
+- Representados (emisión a terceros por delegación), con ABM e importación.
+- Importación de lotes desde Excel con detección de duplicados por comprobante global.
+- Seguimiento de pendientes con semáforo por antigüedad, reenvío y marcado de carga.
+- Importación de comprobantes ya emitidos leyendo su PDF (QR de ARCA + texto),
+  con validación de CAE duplicado y de CUIT de emisor.
+- Envío de facturas por email con PDF adjunto y exportación a CSV por perfil.
+- Datos del emisor por variable de entorno (ARCANUM_EMISORES).
+
+Este producto se distribuye bajo Apache License 2.0. Arcanum no está afiliado
+ni respaldado por ARCA/AFIP.
